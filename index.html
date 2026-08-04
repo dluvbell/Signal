@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MasterPlan · 관제실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12151A;
+  --panel:#1B2027;
+  --panel2:#232A33;
+  --rule:#323B47;
+  --rule2:#4A5665;
+  --paper:#EEEAE1;
+  --dim:#9AA6B2;
+  --dimmer:#66717E;
+
+  --straight:#E3AE3C;   /* 주통 — 신호를 따르는 쪽 */
+  --aux:#62A8B8;        /* 보조통 — 평시엔 규칙만 */
+  --armed:#FF6350;      /* 무장 — 계단이 열린 상태 */
+
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  --sans:'Noto Sans KR',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--ink);color:var(--paper)}
+body{font-family:var(--sans);font-weight:300;line-height:1.6;
+  -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;padding:0 0 64px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:840px;margin:0 auto;padding:0 20px}
+a{color:inherit;text-decoration:none}
+
+/* ── 머리 ── */
+header{padding:34px 0 0}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--dimmer);margin-bottom:10px}
+h1{font-size:27px;font-weight:500;letter-spacing:-.02em}
+.tagline{margin-top:8px;font-size:13px;color:var(--dim)}
+
+/* ── 배분 막대 ── */
+.alloc{margin:26px 0 0}
+.alloc-bar{display:flex;height:8px;border-radius:2px;overflow:hidden;gap:2px}
+.alloc-bar i{display:block}
+.alloc-bar .s{background:var(--straight);flex:60}
+.alloc-bar .a{background:var(--aux);flex:40;opacity:.72}
+.alloc-key{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:11px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--dimmer)}
+.alloc-key span{display:inline-flex;align-items:center;gap:7px}
+.alloc-key b{width:7px;height:7px;border-radius:50%;flex:none}
+.alloc-key .s b{background:var(--straight)}
+.alloc-key .a b{background:var(--aux);opacity:.8}
+.alloc-note{margin-top:12px;font-size:11.5px;color:var(--dimmer);line-height:1.7}
+
+/* ── 상태별 배분 ── */
+.states{margin-top:18px;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.states div{display:grid;grid-template-columns:76px 1fr 1fr;gap:0;
+  font-family:var(--mono);font-size:11px;border-bottom:1px solid var(--rule)}
+.states div:last-child{border-bottom:0}
+.states div>*{padding:9px 12px}
+.states .hd{color:var(--dimmer);letter-spacing:.12em;text-transform:uppercase;font-size:9.5px;
+  background:#171B21}
+.states .st{color:var(--paper);letter-spacing:.1em}
+.states .m{color:var(--straight);border-left:1px solid var(--rule)}
+.states .x{color:var(--aux);border-left:1px solid var(--rule)}
+.states .hd.m,.states .hd.x{color:var(--dimmer)}
+
+/* ── 슬리브 ── */
+.sleeve{margin-top:40px}
+.sleeve-head{display:flex;align-items:baseline;gap:12px;
+  border-bottom:1px solid var(--rule);padding-bottom:11px;margin-bottom:8px}
+.tick{width:7px;height:7px;border-radius:50%;background:var(--c);flex:none;transform:translateY(-2px)}
+.sleeve-head h2{font-family:var(--mono);font-size:12px;font-weight:600;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--c)}
+.sleeve-head .pct{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dimmer)}
+.sleeve-role{font-size:12.5px;color:var(--dim);line-height:1.75;margin-bottom:16px}
+.sleeve-role b{color:var(--paper);font-weight:500}
+
+.grid{display:grid;grid-template-columns:1fr;gap:14px}
+
+.card{background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--rule2);
+  border-radius:6px;padding:20px 19px;display:flex;flex-direction:column;gap:13px;
+  transition:border-color .22s,background .22s,transform .18s}
+.card:hover{border-color:var(--rule2);border-left-color:var(--c);
+  background:var(--panel2);transform:translateY(-1px)}
+.card:focus-visible{outline:2px solid var(--c);outline-offset:3px}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.kind{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dimmer)}
+.cadence{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--c);opacity:.85}
+.card h3{font-size:16.5px;font-weight:500;letter-spacing:-.01em}
+.card p{font-size:12.5px;color:var(--dim);line-height:1.7;flex:1}
+.go{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--c);border-top:1px solid var(--rule);padding-top:12px}
+.go::after{content:" →"}
+
+/* ── 계단 (보조통의 표식) ── */
+.ladder{display:flex;gap:3px;margin-top:2px}
+.ladder i{flex:1;height:4px;border-radius:1px;background:var(--rule2);opacity:.55}
+.ladder-lab{display:flex;gap:3px;margin-top:6px;
+  font-family:var(--mono);font-size:9.5px;color:var(--dimmer)}
+.ladder-lab i{flex:1;font-style:normal;text-align:center}
+
+.rules{border:1px solid var(--rule);border-radius:6px;padding:18px 19px;background:var(--panel)}
+.rules-note{margin-top:14px;font-size:11.5px;color:var(--dimmer);line-height:1.7}
+
+footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:10px;color:var(--dimmer);line-height:1.9}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}
+  .card:hover{transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">MasterPlan · Command</div>
+  <h1>두 주머니 관제실</h1>
+  <p class="tagline">주통은 신호를 따르고, 보조통은 계단만 따릅니다. 판정은 신호탑 한 번으로 둘 다 나옵니다.</p>
+
+  <div class="alloc">
+    <div class="alloc-bar"><i class="s"></i><i class="a"></i></div>
+    <div class="alloc-key">
+      <span class="s"><b></b>주통 60 · 스트레이트</span>
+      <span class="a"><b></b>보조통 40 · 평시 QQQ / BOXX</span>
+    </div>
+    <p class="alloc-note">보조통은 주통이 OUT을 낼 때 무장하고, 52주 고점 대비 계단을 뚫은 만큼만 QLD로 들어갑니다. 목표선을 되찾기 전에는 나오지 않습니다.</p>
+
+    <div class="states">
+      <div><span class="hd">레짐</span><span class="hd m">주통 60</span><span class="hd x">보조통 40</span></div>
+      <div><span class="st">STRONG</span><span class="m">QLD 전액</span><span class="x">QQQ</span></div>
+      <div><span class="st">MID</span><span class="m">QQQ 83 + BOXX 17</span><span class="x">BOXX</span></div>
+      <div><span class="st">OUT</span><span class="m">BOXX 전액</span><span class="x">BOXX</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ══ 스트레이트 (주통) ══ -->
+<section class="sleeve" style="--c:var(--straight)">
+  <div class="sleeve-head">
+    <span class="tick"></span>
+    <h2>Straight · 3-State 레짐</h2>
+    <span class="pct">전체의 60%</span>
+  </div>
+  <p class="sleeve-role">유일하게 <b>신호를 따르는</b> 주머니입니다. STRONG → QLD / MID → QQQ 83 + BOXX 17 / OUT → BOXX 100. 추세가 깨지면 나갑니다 — 이 주머니가 전체 낙폭을 붙잡습니다.</p>
+  <div class="grid">
+    <a href="./masterplan_signal.html" class="card">
+      <div class="card-top"><span class="kind">신호</span><span class="cadence">매일 · 장마감 후</span></div>
+      <h3>신호탑</h3>
+      <p>QQQ 종가로 오늘의 레짐을 확정하고, 자산 매핑과 ATR 손절선을 냅니다. <b>같은 실행에서 보조통 계단까지 함께</b> 나옵니다 — 두 주머니의 지시가 한 화면에 있습니다. 전이는 27년간 연 4회꼴이니 대부분의 날은 "그대로".</p>
+      <span class="go">오늘 신호 확인</span>
+    </a>
+  </div>
+</section>
+
+<!-- ══ 보조통 ══ -->
+<section class="sleeve" style="--c:var(--aux)">
+  <div class="sleeve-head">
+    <span class="tick"></span>
+    <h2>보조통 · 크래쉬 계단</h2>
+    <span class="pct">전체의 40%</span>
+  </div>
+  <p class="sleeve-role">평시에는 레짐만 봅니다 — <b>STRONG이면 QQQ, 아니면 BOXX.</b> 주통이 OUT을 내는 순간 무장하고, 그때부터 52주 고점 대비 최저 낙폭이 <b>−15 / −30 / −45 / −60 / −75</b>를 뚫은 수만큼 <b>보조통의 20%씩 QLD로</b> 들어갑니다. 사는 건 STRONG일 때뿐이고, 첫 투입일의 52주 고점을 되찾은 뒤 STRONG을 벗어나는 날 전량 나옵니다.</p>
+  <div class="rules">
+    <div class="ladder"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="ladder-lab"><i>−15</i><i>−30</i><i>−45</i><i>−60</i><i>−75</i></div>
+    <p class="rules-note">무장 여부 · 최저 낙폭 · 보유 단수 · 목표선은 신호탑이 매번 전 이력을 다시 돌려 계산합니다. 적어 둘 것도, 기억할 것도 없습니다.</p>
+  </div>
+</section>
+
+<footer>
+  집행은 신호를 본 날 · 지정가만 · 3거래일 지연이면 낙폭 7%p 악화<br>
+  연 1회 리밸런싱은 1월 첫 거래일, 트랑슈가 비어 있을 때만<br>
+  여행: STRONG이면 전체의 30%만 QQQ, 아니면 전량 BOXX/SGOV
+</footer>
+
+</div>
+</body>
+</html>
