@@ -345,10 +345,18 @@ function render(R){
   const vs = v => (v!=null && isFinite(v)) ? v.toFixed(1) : '—';   // 워밍업 구간 널가드
   if(R.regime===0){vd.classList.add('out');st.textContent='OUT';as.textContent='→ BOXX 100 (주통 전액 대피)';
     nt.textContent=R.exitCause==='stop'?'ATR 손절선 이탈':'추세 이탈 (SMA < EMA200)';}
+  // [2026-08-12] 판정 사유를 실제 조건으로 갈라 쓴다. 종전에는 STRONG이면 무조건 '< volDown',
+  //   MID면 무조건 '> volUp'으로 찍혀, 히스테리시스 밴드 안에서 '유지'되는 날 거짓 부등호가 나왔다
+  //   (예: 2026-08-11 MID, 실현변동성 24.0인데 "24.0% > 24.2%"). 판정 로직은 무변경 — 문구만 정정.
   else if(R.regime===2){vd.classList.add('strong');st.textContent='STRONG';as.textContent='→ QLD 100 (주통 전액 · 나스닥100 2배)';
-    nt.textContent=S.state===3?`실현변동성 ${vs(R.vol)}% < ${vs(R.volDown)}% (조용한 추세장)`:'2-state 모드 — IN=STRONG';}
+    if(S.state!==3)          nt.textContent='2-state 모드 — IN=STRONG';
+    else if(R.vol==null)     nt.textContent='실현변동성 산출 전 (워밍업)';
+    else if(R.vol<R.volDown) nt.textContent=`실현변동성 ${vs(R.vol)}% < ${vs(R.volDown)}% (조용한 추세장)`;
+    else                     nt.textContent=`실현변동성 ${vs(R.vol)}% — 밴드(${vs(R.volDown)}~${vs(R.volUp)}%) 안 · STRONG 유지 · MID 강등선 ${vs(R.volUp)}%`;}
   else {vd.classList.add('mid');st.textContent='MID';as.textContent='→ QQQ 83 + BOXX 17 (주통)';
-    nt.textContent=`실현변동성 ${vs(R.vol)}% > ${vs(R.volUp)}% (요동치는 횡보장)`;}
+    if(R.vol==null)          nt.textContent='실현변동성 산출 전 (워밍업)';
+    else if(R.vol>R.volUp)   nt.textContent=`실현변동성 ${vs(R.vol)}% > ${vs(R.volUp)}% (요동치는 횡보장)`;
+    else                     nt.textContent=`실현변동성 ${vs(R.vol)}% — 밴드(${vs(R.volDown)}~${vs(R.volUp)}%) 안 · MID 유지 · STRONG 복귀선 ${vs(R.volDown)}%`;}
   document.getElementById('v-early').style.display=R.early?'inline-block':'none';
 
   document.getElementById('m-date').textContent=(typeof kDate==='function')?kDate(R.date):R.date;
