@@ -98,7 +98,7 @@
 <body>
 
 <h1><span class="dot" id="live-dot"></span> 3-State Regime Signal Tower</h1>
-<div class="sub">매일 장 마감 후 1회 · QQQ 종가 기준 · 주통 STRONG(QLD 100) / MID(QQQ 83 + BOXX 17) / OUT(BOXX 100)</div>
+<div class="sub">매일 장 마감 후 1회 · QQQ 종가 기준 · 주통 STRONG(QLD 100) / MID(QQQ 67 + BOXX 33) / OUT(BOXX 100)</div>
 
 <!-- ── API ── -->
 <div class="panel">
@@ -353,7 +353,7 @@ function render(R){
     else if(R.vol==null)     nt.textContent='실현변동성 산출 전 (워밍업)';
     else if(R.vol<R.volDown) nt.textContent=`실현변동성 ${vs(R.vol)}% < ${vs(R.volDown)}% (조용한 추세장)`;
     else                     nt.textContent=`실현변동성 ${vs(R.vol)}% — 밴드(${vs(R.volDown)}~${vs(R.volUp)}%) 안 · STRONG 유지 · MID 강등선 ${vs(R.volUp)}%`;}
-  else {vd.classList.add('mid');st.textContent='MID';as.textContent='→ QQQ 83 + BOXX 17 (주통)';
+  else {vd.classList.add('mid');st.textContent='MID';as.textContent='→ QQQ 67 + BOXX 33 (주통 · 포트로는 QQQ 40)';
     if(R.vol==null)          nt.textContent='실현변동성 산출 전 (워밍업)';
     else if(R.vol>R.volUp)   nt.textContent=`실현변동성 ${vs(R.vol)}% > ${vs(R.volUp)}% (요동치는 횡보장)`;
     else                     nt.textContent=`실현변동성 ${vs(R.vol)}% — 밴드(${vs(R.volDown)}~${vs(R.volUp)}%) 안 · MID 유지 · STRONG 복귀선 ${vs(R.volDown)}%`;}
@@ -452,7 +452,8 @@ function stateName(r){ return r===0?'OUT' : r===2?'STRONG' : 'MID'; }
 // [2026-07-28] 확정 구조 반영 — 주통(60%) 기준의 배분을 기록한다.
 // 보조통(40%)은 별도 패널에서 관리하므로 이 열에는 넣지 않는다.
 // 스키마 '키'가 아니라 '값'이므로 signal_logger_v3.gs 는 손댈 필요 없음(기존 탭 유지).
-function assetName(r){ return r===0?'BOXX100' : r===2?'QLD100' : 'QQQ83+BOXX17'; }
+// [2026-09-01] MID 위험비중 확정값 83 → 66.6 (5기점 MAR 4:1 + 롤링 왼쪽꼬리 5:0). 포트 기준 QQQ 40 + BOXX 60.
+function assetName(r){ return r===0?'BOXX100' : r===2?'QLD100' : 'QQQ67+BOXX33'; }
 
 async function logToSheet(R, src){
   if(!LOG_URL || !logSecret()) return;   // 시크릿 없으면 로깅 건너뜀
