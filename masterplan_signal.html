@@ -70,7 +70,7 @@
   .warn.y{background:rgba(255,210,59,.1);color:var(--yellow);border:1px solid rgba(255,210,59,.3)}
   .warn.b{background:rgba(56,169,255,.1);color:var(--blue);border:1px solid rgba(56,169,255,.3)}
   .hint{font-size:10px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace}
-  /* ── 보조통 40% ── */
+  /* ── 크래쉬 트랑슈 ── */
   .aux-rail{position:relative;height:52px;margin:14px 0 4px}
   .aux-bar{position:absolute;left:0;right:0;top:20px;height:6px;border-radius:3px;background:#191926}
   .aux-fill{position:absolute;top:20px;left:0;height:6px;border-radius:3px;background:var(--red);opacity:.65}
@@ -98,7 +98,7 @@
 <body>
 
 <h1><span class="dot" id="live-dot"></span> 3-State Regime Signal Tower</h1>
-<div class="sub">매일 장 마감 후 1회 · QQQ 종가 기준 · 주통 STRONG(QLD 100) / MID(QQQ 67 + BOXX 33) / OUT(BOXX 100)</div>
+<div class="sub">매일 장 마감 후 1회 · QQQ 종가 기준 · <b>A안</b> STRONG(QQQ 40 · TQQQ 30 · BOXX 30) / MID(BOXX 100) / OUT(BOXX 100) · 크래쉬 트랑슈 BOXX→QQQ</div>
 
 <!-- ── API ── -->
 <div class="panel">
@@ -181,20 +181,21 @@
 
 <div id="monitor-panel" style="max-width:760px;margin:14px auto 0"></div>
 
-<!-- ══ 보조통 40% — 크래쉬 계단 (전 이력 재생으로 자동 산출) ══ -->
+<!-- ══ 크래쉬 트랑슈 (전 이력 재생으로 자동 산출) — A안 · 스윕 v1.8 규칙 ══ -->
 <div class="panel" id="aux-panel" style="max-width:760px;margin:14px auto 0;display:none">
-  <div class="panel-title">보조통 40% &mdash; 크래쉬 계단</div>
+  <div class="panel-title">크래쉬 트랑슈 &mdash; BOXX &rarr; QQQ</div>
   <div id="aux-body"></div>
-  <div class="grid g3" style="margin-top:14px">
-    <div><label>운용 시작일 (이 날 이후의 무장만)</label>
-      <input type="date" id="aux-since" value="2026-07-24"></div>
-    <div><label>보조통 평가액 (선택)</label>
-      <input type="number" id="aux-pot" step="1" placeholder="넣으면 주문 금액까지"></div>
-    <div><label>단위 금액 (첫 투입 시 20%로 고정)</label>
-      <input type="number" id="aux-unit" step="1" placeholder="비우면 평가액의 20%"></div>
+  <div class="grid g2" style="margin-top:14px">
+    <div><label>운용 시작일 (비우면 1999년부터 승계 &mdash; 권장)</label>
+      <input type="date" id="trn-since" value=""></div>
+    <div><label>포트 전체 평가액 (선택)</label>
+      <input type="number" id="trn-value" step="1" placeholder="넣으면 주문 금액까지"></div>
   </div>
-  <div class="hint">무장 &middot; 최저낙폭 &middot; 단수 &middot; 목표선은 전 이력을 다시 돌려 매번 새로 계산합니다 &mdash; 손으로 관리하지 않습니다.<br>
-    운용 시작일 이전에 시작된 무장은 물려받지 않습니다(현재 <b>2026-07-24</b> = 실제 첫 매수일). 칸을 비우면 1999년부터의 상태를 그대로 승계합니다.</div>
+  <div class="hint">무장 &middot; 최저낙폭 &middot; 단수 &middot; 목표가는 전 이력을 다시 돌려 매번 새로 계산합니다 &mdash; 손으로 관리하지 않습니다.<br>
+    규칙: OUT 전환 = <b>무장</b> · 52주 고점 대비 최저 낙폭이 뚫은 계단(&minus;15/&minus;30/&minus;45/&minus;60/&minus;75) = <b>단수</b> ·
+    STRONG일 때만 단당 포트의 <b>20%p</b>를 BOXX&rarr;QQQ (STRONG의 BOXX 30%가 상한) · 첫 투입일의 52주 고점 = <b>목표가</b> ·
+    QQQ 종가가 목표가에 닿는 날 <b>청산</b>(QQQ만 40%로, 차액 BOXX).<br>
+    운용 시작일을 넣으면 그 날 이전에 시작된 무장은 물려받지 않습니다. 비우면 백테스트와 똑같은 상태를 이어받습니다.</div>
 </div>
 
 <script>
@@ -343,17 +344,18 @@ function render(R){
   const st=document.getElementById('v-state'), as=document.getElementById('v-asset'), nt=document.getElementById('v-note');
   vd.className='verdict';
   const vs = v => (v!=null && isFinite(v)) ? v.toFixed(1) : '—';   // 워밍업 구간 널가드
-  if(R.regime===0){vd.classList.add('out');st.textContent='OUT';as.textContent='→ BOXX 100 (주통 전액 대피)';
+  const PT=(R._trn&&R._trn.target)?R._trn.target:planTarget(R.regime,0);
+  if(R.regime===0){vd.classList.add('out');st.textContent='OUT';as.textContent='→ '+planLabel(PT)+' (전액 대피)';
     nt.textContent=R.exitCause==='stop'?'ATR 손절선 이탈':'추세 이탈 (SMA < EMA200)';}
   // [2026-08-12] 판정 사유를 실제 조건으로 갈라 쓴다. 종전에는 STRONG이면 무조건 '< volDown',
   //   MID면 무조건 '> volUp'으로 찍혀, 히스테리시스 밴드 안에서 '유지'되는 날 거짓 부등호가 나왔다
   //   (예: 2026-08-11 MID, 실현변동성 24.0인데 "24.0% > 24.2%"). 판정 로직은 무변경 — 문구만 정정.
-  else if(R.regime===2){vd.classList.add('strong');st.textContent='STRONG';as.textContent='→ QLD 100 (주통 전액 · 나스닥100 2배)';
+  else if(R.regime===2){vd.classList.add('strong');st.textContent='STRONG';as.textContent='→ '+planLabel(PT)+(PT.sh>0?' (트랑슈 '+R._trn.nDep+'단 포함)':'');
     if(S.state!==3)          nt.textContent='2-state 모드 — IN=STRONG';
     else if(R.vol==null)     nt.textContent='실현변동성 산출 전 (워밍업)';
     else if(R.vol<R.volDown) nt.textContent=`실현변동성 ${vs(R.vol)}% < ${vs(R.volDown)}% (조용한 추세장)`;
     else                     nt.textContent=`실현변동성 ${vs(R.vol)}% — 밴드(${vs(R.volDown)}~${vs(R.volUp)}%) 안 · STRONG 유지 · MID 강등선 ${vs(R.volUp)}%`;}
-  else {vd.classList.add('mid');st.textContent='MID';as.textContent='→ QQQ 67 + BOXX 33 (주통 · 포트로는 QQQ 40)';
+  else {vd.classList.add('mid');st.textContent='MID';as.textContent='→ '+planLabel(PT)+' (전액 대피)';
     if(R.vol==null)          nt.textContent='실현변동성 산출 전 (워밍업)';
     else if(R.vol>R.volUp)   nt.textContent=`실현변동성 ${vs(R.vol)}% > ${vs(R.volUp)}% (요동치는 횡보장)`;
     else                     nt.textContent=`실현변동성 ${vs(R.vol)}% — 밴드(${vs(R.volDown)}~${vs(R.volUp)}%) 안 · MID 유지 · STRONG 복귀선 ${vs(R.volDown)}%`;}
@@ -443,17 +445,16 @@ function renderMonitor(R){
 // ══ [로그] 구글시트 자동 기록 ═══════════════════════════════
 // 아래 두 값을 Apps Script 웹앱 배포 후 채워넣으면 자동 기록 시작.
 // 비워두면 로깅은 조용히 건너뜀 (기존 동작 그대로).
-let LAST_R=null;   // 마지막 판정 — 보조통 금액만 고쳤을 때 재수신 없이 다시 그리기 위함
+let LAST_R=null;   // 마지막 판정 — 평가액·시작일만 고쳤을 때 재수신 없이 다시 그리기 위함
 const LOG_URL = 'https://script.google.com/macros/s/AKfycbyeybVaBNm6IXq_U9pyDgE_8Ye60VasG1x1qF_Om1WLB9Ov1sH2dkIMr2M_a13fxYas/exec';
 // 시크릿은 코드에 저장하지 않음 — 입력창 + localStorage (기기별 1회 입력)
 function logSecret(){ return (document.getElementById('log-secret').value||'').trim(); }
 
 function stateName(r){ return r===0?'OUT' : r===2?'STRONG' : 'MID'; }
-// [2026-07-28] 확정 구조 반영 — 주통(60%) 기준의 배분을 기록한다.
-// 보조통(40%)은 별도 패널에서 관리하므로 이 열에는 넣지 않는다.
+// [2026-09-25] A안 반영 — 포트 전체 기준 목표 배분(트랑슈 포함)을 기록한다. 예: Q40/T30/B30, Q60/T30/B10, B100.
 // 스키마 '키'가 아니라 '값'이므로 signal_logger_v3.gs 는 손댈 필요 없음(기존 탭 유지).
 // [2026-09-01] MID 위험비중 확정값 83 → 66.6 (5기점 MAR 4:1 + 롤링 왼쪽꼬리 5:0). 포트 기준 QQQ 40 + BOXX 60.
-function assetName(r){ return r===0?'BOXX100' : r===2?'QLD100' : 'QQQ67+BOXX33'; }
+function assetName(r,R){ const t=(R&&R._trn&&R._trn.target)?R._trn.target:planTarget(r,0); return planShort(t); }
 
 async function logToSheet(R, src){
   if(!LOG_URL || !logSecret()) return;   // 시크릿 없으면 로깅 건너뜀
@@ -472,7 +473,7 @@ async function logToSheet(R, src){
       state: stateName(cur),
       prevState: prev===null ? '' : stateName(prev),
       changed: (prev===null || prev===cur) ? 'FALSE' : 'TRUE',
-      asset: assetName(cur),
+      asset: assetName(cur,R),
       close: R.close,
       sma: R.sma,
       ema: R.ema,
@@ -562,59 +563,66 @@ function paintFresh(barDate, src){
 }
 // ═══════════════════════════════════════════════════════════
 
-// ══ 보조통 40% — 크래쉬 계단 ════════════════════════════════
-// 백테스터 v1.4.2 ④V2 의 트랑슈 상태기계를 그대로 재생한다.
-//   무장   = 주통이 IN → OUT 으로 바뀐 봉
-//   계단   = 무장 후 52주 고점 대비 '최저' 낙폭이 뚫은 개수 (러닝 최저값)
-//   투입   = STRONG 인 봉에서만, 보조통의 20% × (뚫은 단수 − 보유 단수), 자산 QLD
-//   목표선 = 첫 투입 봉의 52주 고점 (동결)
-//   청산   = 목표선 회복 후 처음으로 STRONG 을 벗어나는 봉 → 전량 BOXX, 무장 해제
-//   사이클 종료 = '청산 시에만' (투입 전 신고가 회복으로는 해제하지 않는다)
-const AUX_LEV = [-15,-30,-45,-60,-75], AUX_UNIT_FRAC = 0.20, AUX_W = 252;
+// ══ A안 배분표 + 크래쉬 트랑슈 ═══════════════════════════════
+// 스윕 v1.8(2026-09) 확정안. 백테스트 엔진(simulate·crashStep)과 같은 규칙을 그대로 재생한다.
+//   배분   = STRONG QQQ40·TQQQ30·BOXX30 / MID BOXX100 / OUT BOXX100 (포트 전체 기준 %)
+//   무장   = IN → OUT 으로 바뀐 봉
+//   단수   = 무장 후 52주 고점 대비 '최저' 낙폭이 뚫은 계단 수 (−15/−30/−45/−60/−75)
+//   투입   = STRONG 인 봉에서만. 단당 포트의 20%p 를 BOXX → QQQ. STRONG 행의 BOXX(30%)가 상한
+//   목표가 = 첫 투입 봉의 52주 고점 (단수를 늘려도 동결)
+//   청산   = 종가가 목표가에 닿는 봉 (레짐 무관, 즉시). QQQ 만 원래 비중으로 — TQQQ 는 손대지 않음
+//   매매   = 레짐이 바뀌는 날은 그날 총액으로 전 자산을 새 표대로(전체 리밸) · 같은 레짐에서 트랑슈만 바뀌면 바뀐 자산만
+//            · 연 1회(새해 첫 거래일) 정기 리밸로 표대로 복원
+const PLAN = { S:{QQQ:40,QLD:0,TQQQ:30}, M:{QQQ:0,QLD:0,TQQQ:0}, O:{QQQ:0,QLD:0,TQQQ:0},
+               trn:{lev:[-15,-30,-45,-60,-75], unit:20}, W:252 };
+function planTarget(reg,nDep){
+  const r = reg===2?PLAN.S : reg===1?PLAN.M : PLAN.O;
+  const t = {QQQ:r.QQQ, QLD:r.QLD, TQQQ:r.TQQQ, BOXX:100-r.QQQ-r.QLD-r.TQQQ, sh:0};
+  if(reg===2 && nDep>0){ const sh=Math.min(nDep*PLAN.trn.unit, Math.max(0,t.BOXX)); t.BOXX-=sh; t.QQQ+=sh; t.sh=sh; }
+  return t;
+}
+function planLabel(t){ const p=[]; if(t.QQQ>0)p.push('QQQ '+t.QQQ); if(t.QLD>0)p.push('QLD '+t.QLD); if(t.TQQQ>0)p.push('TQQQ '+t.TQQQ); if(t.BOXX>0)p.push('BOXX '+t.BOXX); return p.join(' · ')||'—'; }
+function planShort(t){ const p=[]; if(t.QQQ>0)p.push('Q'+t.QQQ); if(t.QLD>0)p.push('L'+t.QLD); if(t.TQQQ>0)p.push('T'+t.TQQQ); if(t.BOXX>0)p.push('B'+t.BOXX); return p.join('/'); }
+const AUX_LEV = PLAN.trn.lev;
 
-function computeAux(R){
-  // 운용 시작일: 이 날 이전에 시작된 무장은 물려받지 않는다(빈 손에서 출발).
-  const sinceEl = document.getElementById('aux-since');
+function computeTrn(R){
+  const sinceEl = document.getElementById('trn-since');
   const since = sinceEl ? (sinceEl.value || '') : '';
   const reg = R && R._regArr;
   if(!reg || !RAW.length || reg.length !== RAW.length || reg.length < 2) return null;
-  const n = reg.length, C = RAW.map(d=>d.close), hi = new Array(n);
-  for(let i=0;i<n;i++){ let h=0; const s0=Math.max(0,i-AUX_W+1);
-    for(let j=s0;j<=i;j++) if(C[j]>h) h=C[j]; hi[i]=h; }
-
-  let armed=false, armIdx=-1, minD=0, entryHi=null, nDep=0, pending=false, cycles=0;
-  const ev=[];                                   // 현재 사이클의 사건
+  const n = reg.length, C = RAW.map(d=>d.close), W=PLAN.W;
+  // 52주 고점 — 단조덱 O(n). 백테스터 hi52Of 와 같은 정의(오늘 포함 252봉 최고 종가)
+  const hi=new Array(n), q=[];
+  for(let i=0;i<n;i++){ while(q.length&&C[q[q.length-1]]<=C[i]) q.pop(); q.push(i); while(q[0]<=i-W) q.shift(); hi[i]=C[q[0]]; }
+  const LEV=PLAN.trn.lev;
+  let armed=false, armIdx=-1, minD=0, entryHi=null, nDep=0, cycles=0;
+  const kArr=new Array(n).fill(0), ev=[];
   const push=(i,t,x)=>ev.push(Object.assign({i:i,t:t},x||{}));
   for(let i=1;i<n;i++){
     const S2=(reg[i]===2), d=C[i]/hi[i]-1;
     if(armed && d<minD) minD=d;
-    if(!armed && reg[i]===0 && reg[i-1]!==0 && (!since || RAW[i].date>=since)){
-      armed=true; armIdx=i; minD=d; nDep=0; entryHi=null; pending=false;
-      ev.length=0; push(i,'ARM',{d:d});
-    }
-    if(!armed) continue;
-    let un=0; for(let q=0;q<AUX_LEV.length;q++) if(minD<=AUX_LEV[q]/100) un++;
-    if(S2 && un>nDep){
-      if(entryHi==null) entryHi=hi[i];
-      const add=un-nDep; nDep=un;
-      push(i,'DEP',{add:add,n:nDep,hi:entryHi,first:(ev.filter(e=>e.t==='DEP').length===0)});
-    }
-    if(entryHi!=null){
-      if(C[i]>=entryHi && !pending){ pending=true; push(i,'PEND',{hi:entryHi}); }
-      if(pending && !S2){
-        push(i,'EXIT',{n:nDep}); cycles++;
-        armed=false; armIdx=-1; minD=0; entryHi=null; nDep=0; pending=false;
-        if(reg[i]===0 && reg[i-1]!==0 && (!since || RAW[i].date>=since)){ armed=true; armIdx=i; minD=d;
-          const keep=ev.slice(-1); ev.length=0; ev.push(keep[0]); push(i,'ARM',{d:d}); }
+    const trans = reg[i]===0 && reg[i-1]!==0 && (!since || RAW[i].date>=since);
+    if(!armed && trans){ armed=true; armIdx=i; minD=d; nDep=0; entryHi=null; ev.length=0; push(i,'ARM',{d:d}); }
+    if(armed){
+      let un=0; for(const L of LEV) if(minD<=L/100) un++;
+      if(S2 && un>nDep){
+        const first=(entryHi==null); if(first) entryHi=hi[i];
+        const add=un-nDep; nDep=un; push(i,'DEP',{add:add,n:nDep,hi:entryHi,first:first});
+      }
+      if(entryHi!=null && C[i]>=entryHi){
+        push(i,'EXIT',{n:nDep,hi:entryHi}); cycles++;
+        armed=false; armIdx=-1; minD=0; entryHi=null; nDep=0;
+        if(trans){ armed=true; armIdx=i; minD=d; const keep=ev.slice(-1); ev.length=0; ev.push(keep[0]); push(i,'ARM',{d:d}); }
       }
     }
+    kArr[i]=nDep;
   }
   const L=n-1;
-  let un=0; if(armed) for(let q=0;q<AUX_LEV.length;q++) if(minD<=AUX_LEV[q]/100) un++;
-  return { armed:armed, armDate:(armIdx>=0?RAW[armIdx].date:null), minD:minD, un:un,
-           nDep:nDep, entryHi:entryHi, pending:pending, cycles:cycles,
-           d:C[L]/hi[L]-1, hi52:hi[L], reg:reg[L], prevReg:reg[L-1],
-           today:ev.filter(e=>e.i===L), ev:ev.slice(-6) };
+  let un=0; if(armed) for(const Lv of LEV) if(minD<=Lv/100) un++;
+  return { armed, armDate:(armIdx>=0?RAW[armIdx].date:null), minD, un, nDep, entryHi, cycles,
+           d:C[L]/hi[L]-1, hi52:hi[L], close:C[L], reg:reg[L], prevReg:reg[L-1],
+           target: planTarget(reg[L], kArr[L]), prevTarget: planTarget(reg[L-1], kArr[L-1]),
+           today: ev.filter(e=>e.i===L), date:RAW[L].date, prevDate:RAW[L-1].date };
 }
 
 function auxRail(A){
@@ -635,79 +643,66 @@ function auxRail(A){
 function renderAux(R){
   const panel=document.getElementById('aux-panel'), body=document.getElementById('aux-body');
   if(!panel||!body) return;
-  const A=computeAux(R);
+  const A=(R&&R._trn)?R._trn:computeTrn(R);
   if(!A){ panel.style.display='none'; return; }
   panel.style.display='block';
+  const val_=parseFloat((document.getElementById('trn-value')||{}).value);
+  const money=pct=>(isFinite(val_)&&val_>0)?' ≈ '+Math.round(val_*pct/100).toLocaleString('ko-KR'):'';
+  const T=A.target, P=A.prevTarget;
+  const regSw = A.reg!==A.prevReg;
+  const dep=A.today.filter(e=>e.t==='DEP')[0], ext=A.today.filter(e=>e.t==='EXIT')[0], arm=A.today.filter(e=>e.t==='ARM')[0];
+  const acts=[], why=[]; let cls='', title='매매 없음';
+  const RGN=['OUT','MID','STRONG'];
 
-  const pot=parseFloat((document.getElementById('aux-pot')||{}).value);
-  let unit=parseFloat((document.getElementById('aux-unit')||{}).value);
-  if(!isFinite(unit)||unit<=0) unit=(isFinite(pot)&&pot>0)?pot*AUX_UNIT_FRAC:NaN;
-  const won=x=>isFinite(x)?Math.round(x).toLocaleString('ko-KR'):null;
-
-  const idle   =(A.reg===2)?'QQQ':'BOXX';
-  const prevIdle=(A.prevReg===2)?'QQQ':'BOXX';
-  const acts=[], why=[];
-  let cls='', title='그대로';
-
-  const dep=A.today.filter(e=>e.t==='DEP')[0];
-  const ext=A.today.filter(e=>e.t==='EXIT')[0];
-  const arm=A.today.filter(e=>e.t==='ARM')[0];
-  const pen=A.today.filter(e=>e.t==='PEND')[0];
-
-  // ★ 오늘 새로 사는 단수는 '이미 들고 있던 단수'가 아니다 — 분리해서 센다.
-  const held = A.nDep - (dep ? dep.add : 0);
-  // 5단 만재면 평시 몫이 0이라 갈아탈 것이 없다.
-  if(idle!==prevIdle && A.nDep < AUX_LEV.length) acts.push('평시 몫을 '+prevIdle+' → '+idle+'로 바꿉니다.');
-  if(arm && !ext){ acts.push('보조통 무장. 오늘부터 52주 고점 대비 최저 낙폭을 셉니다.');
-           why.push('주통이 OUT으로 전환 → 무장 조건 충족.'); title='무장'; cls='act'; }
-  if(dep){
-    const amt=isFinite(unit)?unit*dep.add:NaN;
-    acts.push('QLD를 '+(amt?won(amt)+' ':'')+'매수 — 이번에 '+dep.add+'단, 누적 '+dep.n+'단.');
-    if(dep.first) acts.push('오늘이 첫 투입입니다. 보조통 평가액의 20%를 단위로 고정해 아래 칸에 적어두십시오.');
-    acts.push('목표선 '+dep.hi.toFixed(2)+' — 이 값은 사이클이 끝날 때까지 바뀌지 않습니다.');
-    why.push('최저 낙폭 '+(A.minD*100).toFixed(1)+'%가 계단 '+A.un+'개를 뚫었고 오늘이 STRONG.');
-    title='투입 '+dep.n+'단'; cls='act';
+  if(regSw){
+    title='레짐 전환 → 전체 리밸'; cls='act';
+    acts.push(RGN[A.prevReg]+' → '+RGN[A.reg]+': 포트 전체를 새 표대로 맞춥니다 — <b>'+planLabel(T)+'</b>.');
+    ['QQQ','QLD','TQQQ','BOXX'].forEach(k=>{ if(T[k]>0) acts.push(k+' '+T[k]+'%'+money(T[k])); });
+    if(dep) acts.push('이 표에는 오늘 열린 트랑슈 '+dep.n+'단(BOXX→QQQ '+T.sh+'%p)이 들어 있습니다.');
+  } else {
+    if(dep){ const d=T.sh-P.sh;
+      title='트랑슈 투입'; cls='act';
+      if(d>0) acts.push('BOXX → QQQ <b>'+d+'%p</b>'+money(d)+' — 누적 '+dep.n+'단 (실효 '+T.sh+'%p). TQQQ는 그대로.');
+      else acts.push('단수가 '+dep.n+'단으로 늘었지만 STRONG의 BOXX가 이미 다 들어가 있어 추가 매수는 없습니다.');
+    }
+    if(ext){ const d=P.QQQ-T.QQQ;
+      title='트랑슈 청산'; cls='exit';
+      acts.push('QQQ 종가가 목표가 '+ext.hi.toFixed(2)+'에 닿았습니다.');
+      if(d>0) acts.push('QQQ를 '+T.QQQ+'%'+money(T.QQQ)+'로 줄이고 차액 <b>'+d+'%p</b>'+money(d)+'를 BOXX로. TQQQ는 손대지 않습니다(다음 정기 리밸에서 표대로 복원).');
+      else acts.push('지금은 STRONG이 아니라 이미 전액 BOXX — 따로 팔 것은 없고, 다음 STRONG부터 원래 표(QQQ 40)로 돌아갑니다.');
+    }
   }
-  if(pen && !ext) acts.push('목표선 '+pen.hi.toFixed(2)+' 회복. 다음에 STRONG을 벗어나는 날이 청산일입니다.');
-  if(ext){
-    acts.push('트랑슈 '+ext.n+'단 전량 매도 → BOXX.'+(arm?'':' 보조통은 다시 잠듭니다.'));
-    why.push('목표선 회복 뒤 STRONG 이탈 = 청산 조건.');
-    title='청산'; cls='exit';
-    if(arm){ acts.push('같은 날 주통이 OUT이라 보조통은 곧바로 다시 무장합니다 — 오늘부터 새 사이클의 최저 낙폭을 셉니다.');
-             why.push('청산 당일 IN→OUT 전환 → 즉시 재무장.'); }
-  }
-  // ★ held(어제까지 보유분)로 판정한다. A.nDep 을 쓰면 첫 투입일에
-  //    '매수 지시'와 '전량 QLD 환원 지시'가 겹쳐 두 배로 사게 된다.
-  if(!ext && held>0){
-    if(A.reg===2 && A.prevReg!==2) acts.push('기존 트랑슈 '+held+'단을 BOXX → QLD로 되돌립니다.');
-    else if(A.reg!==2 && A.prevReg===2) acts.push('기존 트랑슈 '+held+'단을 QLD → BOXX로 대피시킵니다.');
-  }
-  if(A.armed && !dep && A.un>A.nDep)
-    acts.push('대기 — STRONG이 나오는 날 '+(A.un-A.nDep)+'단을 삽니다'
-      +(isFinite(unit)?' ('+won(unit*(A.un-A.nDep))+')':'')+'.');
-  if(!acts.length) why.push(A.armed?'무장 중이지만 새로 뚫린 계단이 없습니다.':'무장 조건이 아닙니다.');
-  else if(!title||title==='그대로') title='조정';
+  if(arm && !ext){ acts.push('무장 — 오늘부터 52주 고점 대비 최저 낙폭을 셉니다. 돈은 STRONG이 떠야 들어갑니다.'); why.push('IN → OUT 전환 = 무장 조건.'); if(!regSw&&!dep){title='무장'; cls='act';} }
+  if(arm && ext) why.push('청산 당일 IN→OUT 전환 → 즉시 재무장.');
+  if(A.armed && !dep && A.un>A.nDep && A.reg!==2)
+    acts.push('대기 — STRONG이 뜨는 날 트랑슈 '+A.un+'단(BOXX→QQQ '+Math.min(A.un*PLAN.trn.unit,100-PLAN.S.QQQ-PLAN.S.QLD-PLAN.S.TQQQ)+'%p)이 함께 들어갑니다.');
+  if(A.armed && A.nDep>0 && A.reg!==2 && !regSw)
+    why.push('트랑슈 '+A.nDep+'단 보유 중이지만 지금은 STRONG이 아니라 전액 BOXX — STRONG 복귀 시 자동으로 다시 실립니다.');
+  const m=+A.date.slice(5,7), dd=+A.date.slice(8,10);
+  if(m===12 && dd>=24){ acts.push('연말 — 새해 첫 거래일에 <b>정기 리밸</b>: 그날 표대로 전 자산을 맞춥니다 ('+planLabel(T)+').'); if(title==='매매 없음') title='정기 리밸 예고'; }
+  if(!acts.length) why.push(A.armed?(A.nDep>0?'트랑슈 투입 중 — 목표가 도달을 기다립니다.':'무장 중이지만 새로 뚫린 계단이 없습니다.'):'무장 조건이 아닙니다(수면).');
 
   const nextLev=A.armed?AUX_LEV.filter(L=>A.minD>L/100)[0]:AUX_LEV[0];
   const row=(k,v)=>'<div class="metric"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';
+  const stTxt=!A.armed?'수면':(A.nDep>0?'투입 중 '+A.nDep+'단':'무장');
   body.innerHTML =
     auxRail(A)
     + '<div class="metrics" style="margin-top:16px">'
-    + row('상태', A.armed?'무장':'수면')
+    + row('상태', stTxt)
     + row('무장일', A.armDate?kDate(A.armDate):'—')
     + row('오늘 낙폭 (52주 고점)', (A.d*100).toFixed(1)+'%')
     + row('최저 낙폭', A.armed?(A.minD*100).toFixed(1)+'%':'—')
     + row('뚫은 계단', A.armed?A.un+'단':'—')
-    + row('보유 단수', A.nDep+'단')
-    + row('목표선', A.entryHi!=null?'$'+A.entryHi.toFixed(2)+(A.pending?' (회복)':''):'—')
+    + row('투입 크기 (STRONG 때)', A.nDep>0?Math.min(A.nDep*PLAN.trn.unit,100-PLAN.S.QQQ-PLAN.S.QLD-PLAN.S.TQQQ)+'%p ('+A.nDep+'단)':'—')
+    + row('목표가', A.entryHi!=null?'$'+A.entryHi.toFixed(2)+' (지금 '+((A.entryHi/A.close-1)*100).toFixed(1)+'% 위)':'—')
     + row('다음 계단까지', (A.armed&&nextLev!=null)
         ? '$'+(A.hi52*(1+nextLev/100)).toFixed(2)+' ('+nextLev+'%)'
         : (A.armed?'전 계단 도달':'— (무장 후 계산)'))
     + '</div>'
     + '<div class="aux-order '+cls+'"><h4>'+title+'</h4><ul>'
-    + (acts.length?acts:['오늘은 손대지 않습니다. 평시 몫은 '+idle+'.']).map(a=>'<li>'+a+'</li>').join('')
+    + (acts.length?acts:['오늘은 손대지 않습니다. 목표 배분 '+planLabel(T)+'.']).map(a=>'<li>'+a+'</li>').join('')
     + '</ul><div class="aux-why">'+(why.join(' ')||'&nbsp;')
-    + ' · 집행은 다음 거래일 개장, 지정가로.'
+    + ' · 집행은 다음 거래일, 지정가로.'
     + ' · 지나온 사이클 '+A.cycles+'회.</div></div>';
 }
 // ═══════════════════════════════════════════════════════════
@@ -736,10 +731,11 @@ async function check(){
     s.className='status ok';s.textContent=`🟢 수신 완료 (${src}) · 판정 중...`;
     document.getElementById('live-dot').classList.add('live');
     const R=runEngine();
+    R._trn=computeTrn(R);                 // [A안] 트랑슈 상태 → 판정 카드·시트 기록·패널이 같은 값을 쓴다
     LAST_R=R;
     render(R);
     if(typeof renderMonitor==='function') renderMonitor(R);   // [v36] 레짐 감시기(존재 시)
-    if(typeof renderAux==='function') renderAux(R);           // [보조통] 크래쉬 계단
+    if(typeof renderAux==='function') renderAux(R);           // [A안] 크래쉬 트랑슈
     s.textContent=`🟢 완료 · 기준일 ${kDate(R.date)} · ${RAW.length}일 재생 (${src})`;
     markRun(ymd(new Date()));
     paintRunLine(PREV_RUN);
@@ -758,7 +754,7 @@ document.getElementById('f-bounce').classList.toggle('dim',S.useR);
 document.getElementById('p-bounce').disabled=S.useR;
 // ══ [저장] API 키 · 로그 시크릿 기기별 기억 (localStorage) ═══
 (function(){
-  const F=['api-key','log-secret','aux-since','aux-pot','aux-unit'];
+  const F=['api-key','log-secret','trn-since','trn-value'];
   F.forEach(id=>{
     const el=document.getElementById(id); if(!el) return;
     // 사파리 프라이빗 모드 등에서 localStorage 접근 자체가 예외를 던진다.
@@ -768,8 +764,8 @@ document.getElementById('p-bounce').disabled=S.useR;
     try{ const v=localStorage.getItem('sig:'+id); if(v!==null) el.value=v; }catch(e){}
     el.addEventListener('change',()=>{
       try{ localStorage.setItem('sig:'+id, el.value); }catch(e){}
-      // 보조통 금액을 고치면 마지막 판정으로 주문 금액만 다시 그린다 (재수신 없음)
-      if(id.slice(0,4)==='aux-' && typeof renderAux==='function' && LAST_R) renderAux(LAST_R);
+      // 시작일·평가액을 고치면 마지막 판정으로 다시 그린다 (재수신 없음). 시작일은 상태 자체가 바뀌므로 다시 계산
+      if(id.slice(0,4)==='trn-' && LAST_R){ if(id==='trn-since'){ LAST_R._trn=computeTrn(LAST_R); render(LAST_R); } renderAux(LAST_R); }
     });
   });
 })();
