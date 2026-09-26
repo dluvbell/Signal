@@ -98,7 +98,7 @@
 <body>
 
 <h1><span class="dot" id="live-dot"></span> 3-State Regime Signal Tower</h1>
-<div class="sub">매일 장 마감 후 1회 · QQQ 종가 기준 · <b>A안</b> STRONG(QQQ 40 · TQQQ 30 · BOXX 30) / MID(BOXX 100) / OUT(BOXX 100) · 크래쉬 트랑슈 BOXX→QQQ</div>
+<div class="sub">매일 장 마감 후 1회 · QQQ 종가 기준 · <b>X1</b> STRONG(QQQ 40 · TQQQ 30 · BOXX 30) / MID(BOXX 100) / OUT(BOXX 100) · 크래쉬 트랑슈 BOXX→QQQ 20%p · 1단(−15%)</div>
 
 <!-- ── API ── -->
 <div class="panel">
@@ -181,9 +181,9 @@
 
 <div id="monitor-panel" style="max-width:760px;margin:14px auto 0"></div>
 
-<!-- ══ 크래쉬 트랑슈 (전 이력 재생으로 자동 산출) — A안 · 스윕 v1.8 규칙 ══ -->
+<!-- ══ 크래쉬 트랑슈 (전 이력 재생으로 자동 산출) — X1 · 스윕 v1.9 규칙 ══ -->
 <div class="panel" id="aux-panel" style="max-width:760px;margin:14px auto 0;display:none">
-  <div class="panel-title">크래쉬 트랑슈 &mdash; BOXX &rarr; QQQ</div>
+  <div class="panel-title">크래쉬 트랑슈 &mdash; BOXX &rarr; QQQ 20%p · 1단</div>
   <div id="aux-body"></div>
   <div class="grid g2" style="margin-top:14px">
     <div><label>운용 시작일 (비우면 1999년부터 승계 &mdash; 권장)</label>
@@ -192,9 +192,9 @@
       <input type="number" id="trn-value" step="1" placeholder="넣으면 주문 금액까지"></div>
   </div>
   <div class="hint">무장 &middot; 최저낙폭 &middot; 단수 &middot; 목표가는 전 이력을 다시 돌려 매번 새로 계산합니다 &mdash; 손으로 관리하지 않습니다.<br>
-    규칙: OUT 전환 = <b>무장</b> · 52주 고점 대비 최저 낙폭이 뚫은 계단(&minus;15/&minus;30/&minus;45/&minus;60/&minus;75) = <b>단수</b> ·
-    STRONG일 때만 단당 포트의 <b>20%p</b>를 BOXX&rarr;QQQ (STRONG의 BOXX 30%가 상한) · 첫 투입일의 52주 고점 = <b>목표가</b> ·
-    QQQ 종가가 목표가에 닿는 날 <b>청산</b>(QQQ만 40%로, 차액 BOXX).<br>
+    규칙: OUT 전환 = <b>무장</b> · 52주 고점 대비 최저 낙폭이 &minus;15%를 뚫으면 <b>1단</b>(계단은 이것 하나) ·
+    STRONG일 때만 포트의 <b>20%p</b>를 BOXX&rarr;QQQ (Q40·T30·B30 &rarr; Q60·T30·B10) · 첫 투입일의 52주 고점 = <b>목표가</b> ·
+    QQQ 종가가 목표가에 닿는 날 <b>청산</b>(QQQ 20%p를 BOXX로 &rarr; Q40·T30·B30).<br>
     운용 시작일을 넣으면 그 날 이전에 시작된 무장은 물려받지 않습니다. 비우면 백테스트와 똑같은 상태를 이어받습니다.</div>
 </div>
 
@@ -389,18 +389,9 @@ function render(R){
 // ── Massive(구 Polygon.io) fetch ────────────────────────────
 // [v36] 레짐체인지 감시기 — 백테스터 진단에서 산출한 기준선 대비 최근 250거래일 판정. 월1회 확인 권장.
 const MON_BASE = {
-  swapAmber:6, swapRed:8.4,       // 252봉 창 레짐스왑: 상위5% / 평균+3σ
-  volAmber:26.2, volRed:45.6,     // 252봉 창 RV '중앙값'의 분포: 2010~ 상위5% / 전구간 상위5%
-  strongFloor:53,                 // STRONG비율(변동성 중앙값<25% 창만) 하위5%
-  updated:'2026-09-25',           // ← 기준선을 교체한 날. 교체할 때마다 이 날짜도 같이 바꿀 것 (1년 지나면 화면에 빨간 경고)
-  // ════════════════════════════════════════════════════════════════
-  // ★ 매년 1회 기준선 갱신 방법 ★
-  //   1) Masterplan V42 final.html 을 열고 확정 파라미터 그대로 백테스트 실행
-  //   2) 결과의 '🔬 레짐 진단 통계 — 감시기 기준선' 을 펼침
-  //   3) 맨 아래 'MON_BASE에 그대로 붙여넣기' 한 줄을 복사
-  //   4) 위의 swapAmber ~ volNormalCeil 값을 그 줄의 숫자로 교체 + updated 날짜 교체
-  //   ※ 신호 파라미터(MA·EMA·ADX·ATR·vol23·bw·m·k)는 매년 바꾸지 않는다. 기준선만 바꾼다.
-  // ════════════════════════════════════════════════════════════════
+  swapAmber:6.4, swapRed:8.7,     // 연간 레짐스왑: 1999기점 상위5% / 평균+3σ
+  volAmber:34.7, volRed:53.7,     // 실현변동성 중앙값: 2010상위5% / 1999상위5%
+  strongFloor:31,                 // STRONG비율 하위5%(2010기점)
   volNormalCeil:25                // ③ 조건: 이 밑이면 "변동성 정상"으로 간주
 };
 function renderMonitor(R){
@@ -435,39 +426,19 @@ function renderMonitor(R){
   else if(g2===1) notes.push(`변동성 중앙값 ${rvMed.toFixed(1)}% — 역사적 상위5%(${MON_BASE.volAmber}%) 초과.`);
   if(g3===1) notes.push(`STRONG비율 ${strPct.toFixed(0)}% (변동성은 정상 ${rvMed.toFixed(1)}%인데 레버 못 잡음) — 신호 오작동/구조 변화 의심.`);
   if(!notes.length) notes.push('세 지표 모두 정상 범위. 확정 파라미터 유지 — 손대지 말 것.');
-  // [2026-09-25] 기준선 갱신 기한 표시 — 항상 보이게(펼치지 않아도)
-  const upd=new Date((MON_BASE.updated||'2026-09-25')+'T00:00:00'), due=new Date(upd); due.setFullYear(due.getFullYear()+1);
-  const dLeft=Math.round((due-new Date())/86400000);
-  const dueStr=due.getFullYear()+'-'+String(due.getMonth()+1).padStart(2,'0')+'-'+String(due.getDate()).padStart(2,'0');
-  const overdue=dLeft<0, soon=dLeft>=0&&dLeft<=30;
-  const dueCol=overdue?'#f87171':soon?'#fbbf24':'#94a3b8', dueBg=overdue?'rgba(248,113,113,0.12)':soon?'rgba(251,191,36,0.10)':'rgba(148,163,184,0.06)';
-  const dueMsg=overdue?`🔴 감시기 기준선 갱신 기한 ${-dLeft}일 지남 — 지금 V42를 돌려 기준선을 교체하세요`
-              :soon?`🟡 감시기 기준선 갱신 기한 D-${dLeft} (${dueStr}) — V42 준비`
-              :`📅 감시기 기준선 다음 갱신: ${dueStr} (D-${dLeft}) · 매년 1회 · V42로`;
-  const dueBanner=`<div style="margin-bottom:8px;padding:10px 14px;border:2px solid ${dueCol};border-radius:10px;background:${dueBg};color:${dueCol};font-weight:700;font-size:14px">${dueMsg}</div>`;
-  const howTo=`<div style="margin:6px 0 10px;padding:12px 14px;border:2px solid #818cf8;border-radius:10px;background:rgba(129,140,248,0.08);font-size:13px;line-height:1.8;color:#e0e7ff">
-      <div style="font-size:15px;font-weight:800;color:#a5b4fc;margin-bottom:4px">★ 매년 1회 기준선 갱신 방법</div>
-      ① <b>Masterplan V42 final.html</b>을 열고 확정 파라미터 그대로 백테스트 실행<br>
-      ② 결과의 <b>🔬 레짐 진단 통계 — 감시기 기준선</b>을 펼침<br>
-      ③ 맨 아래 <b>"MON_BASE에 그대로 붙여넣기"</b> 한 줄을 복사<br>
-      ④ 이 파일(메모장으로 열기)에서 <b>const MON_BASE</b>를 찾아 숫자 교체 + <b>updated</b> 날짜를 오늘로<br>
-      <div style="margin-top:6px;color:#fca5a5;font-weight:700">⚠ 신호 파라미터(MA·EMA·ADX·ATR·vol23·밴드·m·k)는 매년 바꾸지 않습니다. 기준선만 바꿉니다.</div>
-      <div style="color:#fde68a;font-weight:700">⚠ 🟡는 폭락 뒤 몇 달간 켜지는 게 정상. 🟡가 12개월 넘게 이어질 때만 파라미터 재검토.</div>
-    </div>`;
   const row=(g,label,valStr,baseStr)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-family:'JetBrains Mono',monospace;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.04)">
     <span>${lampFor(g)} ${label}</span><span style="color:var(--muted)">${valStr} <span style="opacity:0.55">· 기준 ${baseStr}</span></span></div>`;
-  el.innerHTML=dueBanner+`<details style="border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden">
+  el.innerHTML=`<details style="border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden">
     <summary style="cursor:pointer;padding:11px 14px;font-weight:600;font-size:13px">
       ${lamp} 레짐체인지 감시기 — <span style="color:${vColor}">${verdict}</span>
       <span style="float:right;color:var(--muted);font-size:10px;font-weight:400">최근 250일 · 월1회 ▾</span></summary>
     <div style="padding:2px 14px 12px">
-      ${howTo}
       ${row(g1,'① 연간 레짐스왑', swapAnn.toFixed(1)+'회/년', '🟡'+MON_BASE.swapAmber+' 🔴'+MON_BASE.swapRed)}
       ${row(g2,'② 실현변동성 중앙값', (rvMed!=null?rvMed.toFixed(1)+'%':'—'), '🟡'+MON_BASE.volAmber+'% 🔴'+MON_BASE.volRed+'%')}
       ${row(g3,'③ STRONG 비율(조건부)', (strPct!=null?strPct.toFixed(0)+'%':'—'), '변동성 정상시 🟡<'+MON_BASE.strongFloor+'%')}
       <div style="margin-top:9px;font-size:11px;line-height:1.65;color:#cbd5e1">${notes.map(x=>'· '+x).join('<br>')}</div>
       <div style="margin-top:8px;font-size:9px;color:var(--muted);opacity:0.7;line-height:1.5">
-        기준선 출처: V42 🔬레짐 진단 통계(252봉 롤링 창, 감시기와 같은 통계량) · 2026-09-25 산출. 🟡가 12개월 넘게 이어질 때만 재검토 대상. 매년 V42로 갱신. ③은 변동성 정상일 때만 발동(위기 시 STRONG 0%는 정상 방어라 무시). 매년 백테스터 진단으로 갱신.
+        기준선: 스왑=1999기점(상위5%/평균+3σ) · 변동성=2010상위5%/1999상위5% · STRONG=2010하위5%. ③은 변동성 정상일 때만 발동(위기 시 STRONG 0%는 정상 방어라 무시). 매년 백테스터 진단으로 갱신.
       </div>
     </div></details>`;
 }
@@ -480,7 +451,7 @@ const LOG_URL = 'https://script.google.com/macros/s/AKfycbyeybVaBNm6IXq_U9pyDgE_
 function logSecret(){ return (document.getElementById('log-secret').value||'').trim(); }
 
 function stateName(r){ return r===0?'OUT' : r===2?'STRONG' : 'MID'; }
-// [2026-09-25] A안 반영 — 포트 전체 기준 목표 배분(트랑슈 포함)을 기록한다. 예: Q40/T30/B30, Q60/T30/B10, B100.
+// [2026-09-26] X1 반영 — 포트 전체 기준 목표 배분(트랑슈 포함)을 기록한다. 예: Q40/T30/B30, Q60/T30/B10, B100.
 // 스키마 '키'가 아니라 '값'이므로 signal_logger_v3.gs 는 손댈 필요 없음(기존 탭 유지).
 // [2026-09-01] MID 위험비중 확정값 83 → 66.6 (5기점 MAR 4:1 + 롤링 왼쪽꼬리 5:0). 포트 기준 QQQ 40 + BOXX 60.
 function assetName(r,R){ const t=(R&&R._trn&&R._trn.target)?R._trn.target:planTarget(r,0); return planShort(t); }
@@ -592,22 +563,25 @@ function paintFresh(barDate, src){
 }
 // ═══════════════════════════════════════════════════════════
 
-// ══ A안 배분표 + 크래쉬 트랑슈 ═══════════════════════════════
-// 스윕 v1.8(2026-09) 확정안. 백테스트 엔진(simulate·crashStep)과 같은 규칙을 그대로 재생한다.
+// ══ X1 배분표 + 크래쉬 트랑슈 ═══════════════════════════════
+// 스윕 v1.9(2026-09-26) 확정안 X1 (= A안 배분 + 트랑슈 1단). 백테스트 엔진(simulate·crashStep)과 같은 규칙을 그대로 재생한다.
 //   배분   = STRONG QQQ40·TQQQ30·BOXX30 / MID BOXX100 / OUT BOXX100 (포트 전체 기준 %)
 //   무장   = IN → OUT 으로 바뀐 봉
-//   단수   = 무장 후 52주 고점 대비 '최저' 낙폭이 뚫은 계단 수 (−15/−30/−45/−60/−75)
-//   투입   = STRONG 인 봉에서만. 단당 포트의 20%p 를 BOXX → QQQ. STRONG 행의 BOXX(30%)가 상한
-//   목표가 = 첫 투입 봉의 52주 고점 (단수를 늘려도 동결)
-//   청산   = 종가가 목표가에 닿는 봉 (레짐 무관, 즉시). QQQ 만 원래 비중으로 — TQQQ 는 손대지 않음
+//   단수   = 무장 후 52주 고점 대비 '최저' 낙폭이 −15% 를 뚫으면 1단 (계단은 1개뿐)
+//   투입   = STRONG 인 봉에서만. 포트의 20%p 를 BOXX → QQQ (→ Q60·T30·B10)
+//   목표가 = 첫 투입 봉의 52주 고점
+//   청산   = 종가가 목표가에 닿는 봉 (레짐 무관, 즉시). QQQ 20%p 를 BOXX 로 되돌린다 (→ Q40·T30·B30)
 //   매매   = 레짐이 바뀌는 날은 그날 총액으로 전 자산을 새 표대로(전체 리밸) · 같은 레짐에서 트랑슈만 바뀌면 바뀐 자산만
 //            · 연 1회(새해 첫 거래일) 정기 리밸로 표대로 복원
 const PLAN = { S:{QQQ:40,QLD:0,TQQQ:30}, M:{QQQ:0,QLD:0,TQQQ:0}, O:{QQQ:0,QLD:0,TQQQ:0},
-               trn:{lev:[-15,-30,-45,-60,-75], unit:20}, W:252 };
+               trn:{lev:[-15], unit:20, src:'BOXX', dst:'QQQ'}, W:252 };
+const TRN_TXT = PLAN.trn.src+'→'+PLAN.trn.dst;
+function trnCap(){ const S_=PLAN.S; return PLAN.trn.src==='BOXX' ? 100-S_.QQQ-S_.QLD-S_.TQQQ : S_[PLAN.trn.src]; }
+function trnSize(n){ return Math.min(n*PLAN.trn.unit, Math.max(0,trnCap())); }
 function planTarget(reg,nDep){
   const r = reg===2?PLAN.S : reg===1?PLAN.M : PLAN.O;
   const t = {QQQ:r.QQQ, QLD:r.QLD, TQQQ:r.TQQQ, BOXX:100-r.QQQ-r.QLD-r.TQQQ, sh:0};
-  if(reg===2 && nDep>0){ const sh=Math.min(nDep*PLAN.trn.unit, Math.max(0,t.BOXX)); t.BOXX-=sh; t.QQQ+=sh; t.sh=sh; }
+  if(reg===2 && nDep>0){ const a=PLAN.trn.src, b=PLAN.trn.dst; const sh=Math.min(nDep*PLAN.trn.unit, Math.max(0,t[a])); t[a]-=sh; t[b]+=sh; t.sh=sh; }
   return t;
 }
 function planLabel(t){ const p=[]; if(t.QQQ>0)p.push('QQQ '+t.QQQ); if(t.QLD>0)p.push('QLD '+t.QLD); if(t.TQQQ>0)p.push('TQQQ '+t.TQQQ); if(t.BOXX>0)p.push('BOXX '+t.BOXX); return p.join(' · ')||'—'; }
@@ -687,26 +661,26 @@ function renderAux(R){
     title='레짐 전환 → 전체 리밸'; cls='act';
     acts.push(RGN[A.prevReg]+' → '+RGN[A.reg]+': 포트 전체를 새 표대로 맞춥니다 — <b>'+planLabel(T)+'</b>.');
     ['QQQ','QLD','TQQQ','BOXX'].forEach(k=>{ if(T[k]>0) acts.push(k+' '+T[k]+'%'+money(T[k])); });
-    if(dep) acts.push('이 표에는 오늘 열린 트랑슈 '+dep.n+'단(BOXX→QQQ '+T.sh+'%p)이 들어 있습니다.');
+    if(dep) acts.push('이 표에는 오늘 열린 트랑슈 '+dep.n+'단('+TRN_TXT+' '+T.sh+'%p)이 들어 있습니다.');
   } else {
     if(dep){ const d=T.sh-P.sh;
       title='트랑슈 투입'; cls='act';
-      if(d>0) acts.push('BOXX → QQQ <b>'+d+'%p</b>'+money(d)+' — 누적 '+dep.n+'단 (실효 '+T.sh+'%p). TQQQ는 그대로.');
-      else acts.push('단수가 '+dep.n+'단으로 늘었지만 STRONG의 BOXX가 이미 다 들어가 있어 추가 매수는 없습니다.');
+      if(d>0) acts.push(PLAN.trn.src+' <b>'+d+'%p</b>'+money(d)+' 매도 → '+PLAN.trn.dst+' 매수 — '+planLabel(T)+'가 됩니다 (누적 '+dep.n+'단).');
+      else acts.push('단수가 '+dep.n+'단으로 늘었지만 STRONG의 '+PLAN.trn.src+'가 이미 다 옮겨져 있어 추가 매매는 없습니다.');
     }
-    if(ext){ const d=P.QQQ-T.QQQ;
+    if(ext){ const d=P[PLAN.trn.dst]-T[PLAN.trn.dst];
       title='트랑슈 청산'; cls='exit';
       acts.push('QQQ 종가가 목표가 '+ext.hi.toFixed(2)+'에 닿았습니다.');
-      if(d>0) acts.push('QQQ를 '+T.QQQ+'%'+money(T.QQQ)+'로 줄이고 차액 <b>'+d+'%p</b>'+money(d)+'를 BOXX로. TQQQ는 손대지 않습니다(다음 정기 리밸에서 표대로 복원).');
-      else acts.push('지금은 STRONG이 아니라 이미 전액 BOXX — 따로 팔 것은 없고, 다음 STRONG부터 원래 표(QQQ 40)로 돌아갑니다.');
+      if(d>0) acts.push(PLAN.trn.dst+' <b>'+d+'%p</b>'+money(d)+' 매도 → '+PLAN.trn.src+' 매수 — 원래 표 '+planLabel(T)+'로 돌아갑니다.');
+      else acts.push('지금은 STRONG이 아니라 이미 전액 BOXX — 따로 팔 것은 없고, 다음 STRONG부터 원래 표('+planLabel(planTarget(2,0))+')로 돌아갑니다.');
     }
   }
   if(arm && !ext){ acts.push('무장 — 오늘부터 52주 고점 대비 최저 낙폭을 셉니다. 돈은 STRONG이 떠야 들어갑니다.'); why.push('IN → OUT 전환 = 무장 조건.'); if(!regSw&&!dep){title='무장'; cls='act';} }
   if(arm && ext) why.push('청산 당일 IN→OUT 전환 → 즉시 재무장.');
   if(A.armed && !dep && A.un>A.nDep && A.reg!==2)
-    acts.push('대기 — STRONG이 뜨는 날 트랑슈 '+A.un+'단(BOXX→QQQ '+Math.min(A.un*PLAN.trn.unit,100-PLAN.S.QQQ-PLAN.S.QLD-PLAN.S.TQQQ)+'%p)이 함께 들어갑니다.');
+    acts.push('대기 — STRONG이 뜨는 날 트랑슈 '+A.un+'단('+TRN_TXT+' '+trnSize(A.un)+'%p)이 함께 들어갑니다 → '+planLabel(planTarget(2,A.un))+'.');
   if(A.armed && A.nDep>0 && A.reg!==2 && !regSw)
-    why.push('트랑슈 '+A.nDep+'단 보유 중이지만 지금은 STRONG이 아니라 전액 BOXX — STRONG 복귀 시 자동으로 다시 실립니다.');
+    why.push('트랑슈 '+A.nDep+'단 살아 있지만 지금은 STRONG이 아니라 전액 BOXX — STRONG 복귀 시 자동으로 다시 실립니다.');
   const m=+A.date.slice(5,7), dd=+A.date.slice(8,10);
   if(m===12 && dd>=24){ acts.push('연말 — 새해 첫 거래일에 <b>정기 리밸</b>: 그날 표대로 전 자산을 맞춥니다 ('+planLabel(T)+').'); if(title==='매매 없음') title='정기 리밸 예고'; }
   if(!acts.length) why.push(A.armed?(A.nDep>0?'트랑슈 투입 중 — 목표가 도달을 기다립니다.':'무장 중이지만 새로 뚫린 계단이 없습니다.'):'무장 조건이 아닙니다(수면).');
@@ -722,7 +696,7 @@ function renderAux(R){
     + row('오늘 낙폭 (52주 고점)', (A.d*100).toFixed(1)+'%')
     + row('최저 낙폭', A.armed?(A.minD*100).toFixed(1)+'%':'—')
     + row('뚫은 계단', A.armed?A.un+'단':'—')
-    + row('투입 크기 (STRONG 때)', A.nDep>0?Math.min(A.nDep*PLAN.trn.unit,100-PLAN.S.QQQ-PLAN.S.QLD-PLAN.S.TQQQ)+'%p ('+A.nDep+'단)':'—')
+    + row('투입 크기 (STRONG 때)', A.nDep>0?trnSize(A.nDep)+'%p '+TRN_TXT+' ('+A.nDep+'단)':'—')
     + row('목표가', A.entryHi!=null?'$'+A.entryHi.toFixed(2)+' (지금 '+((A.entryHi/A.close-1)*100).toFixed(1)+'% 위)':'—')
     + row('다음 계단까지', (A.armed&&nextLev!=null)
         ? '$'+(A.hi52*(1+nextLev/100)).toFixed(2)+' ('+nextLev+'%)'
@@ -760,11 +734,11 @@ async function check(){
     s.className='status ok';s.textContent=`🟢 수신 완료 (${src}) · 판정 중...`;
     document.getElementById('live-dot').classList.add('live');
     const R=runEngine();
-    R._trn=computeTrn(R);                 // [A안] 트랑슈 상태 → 판정 카드·시트 기록·패널이 같은 값을 쓴다
+    R._trn=computeTrn(R);                 // [X1] 트랑슈 상태 → 판정 카드·시트 기록·패널이 같은 값을 쓴다
     LAST_R=R;
     render(R);
     if(typeof renderMonitor==='function') renderMonitor(R);   // [v36] 레짐 감시기(존재 시)
-    if(typeof renderAux==='function') renderAux(R);           // [A안] 크래쉬 트랑슈
+    if(typeof renderAux==='function') renderAux(R);           // [X1] 크래쉬 트랑슈
     s.textContent=`🟢 완료 · 기준일 ${kDate(R.date)} · ${RAW.length}일 재생 (${src})`;
     markRun(ymd(new Date()));
     paintRunLine(PREV_RUN);
