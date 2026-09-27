@@ -98,7 +98,7 @@
 <body>
 
 <h1><span class="dot" id="live-dot"></span> 3-State Regime Signal Tower</h1>
-<div class="sub">매일 장 마감 후 1회 · QQQ 종가 기준 · <b>X1</b> STRONG(QQQ 40 · TQQQ 30 · BOXX 30) / MID(BOXX 100) / OUT(BOXX 100) · 크래쉬 트랑슈 BOXX→QQQ 20%p · 1단(−15%)</div>
+<div class="sub">매일 장 마감 후 1회 · QQQ 종가 기준 · <span id="plan-desc"><b>X1</b> STRONG(QQQ 40 · TQQQ 30 · BOXX 30)</span> / MID(BOXX 100) / OUT(BOXX 100) · 크래쉬 트랑슈 BOXX→QQQ 20%p · 1단(−15%)</div>
 
 <!-- ── API ── -->
 <div class="panel">
@@ -185,6 +185,13 @@
 <div class="panel" id="aux-panel" style="max-width:760px;margin:14px auto 0;display:none">
   <div class="panel-title">크래쉬 트랑슈 &mdash; BOXX &rarr; QQQ 20%p · 1단</div>
   <div id="aux-body"></div>
+  <div style="margin-top:14px"><label>운용 단계 (STRONG 배분 &mdash; TQQQ 30 고정, BOXX만 줄여 감)</label>
+    <select id="trn-stage">
+      <option value="Z1">Z1 — QQQ 20 · TQQQ 30 · BOXX 50 (시작)</option>
+      <option value="Y1">Y1 — QQQ 30 · TQQQ 30 · BOXX 40</option>
+      <option value="X1">X1 — QQQ 40 · TQQQ 30 · BOXX 30 (최종, 여기서 멈춤)</option>
+    </select>
+    <div class="hint" style="margin-top:4px">단계는 <b>하락장을 규칙대로 한 번 넘긴 뒤</b>, <b>새해 첫 거래일 정기 리밸 때만</b> 한 칸씩 올립니다. 하락 중에 내리지 않습니다.</div></div>
   <div class="grid g2" style="margin-top:14px">
     <div><label>운용 시작일 (비우면 1999년부터 승계 &mdash; 권장)</label>
       <input type="date" id="trn-since" value=""></div>
@@ -193,8 +200,8 @@
   </div>
   <div class="hint">무장 &middot; 최저낙폭 &middot; 단수 &middot; 목표가는 전 이력을 다시 돌려 매번 새로 계산합니다 &mdash; 손으로 관리하지 않습니다.<br>
     규칙: OUT 전환 = <b>무장</b> · 52주 고점 대비 최저 낙폭이 &minus;15%를 뚫으면 <b>1단</b>(계단은 이것 하나) ·
-    STRONG일 때만 포트의 <b>20%p</b>를 BOXX&rarr;QQQ (Q40·T30·B30 &rarr; Q60·T30·B10) · 첫 투입일의 52주 고점 = <b>목표가</b> ·
-    QQQ 종가가 목표가에 닿는 날 <b>청산</b>(QQQ 20%p를 BOXX로 &rarr; Q40·T30·B30).<br>
+    STRONG일 때만 포트의 <b>20%p</b>를 BOXX&rarr;QQQ (<span id="plan-trn">Q40·T30·B30 &rarr; Q60·T30·B10</span>) · 첫 투입일의 52주 고점 = <b>목표가</b> ·
+    QQQ 종가가 목표가에 닿는 날 <b>청산</b>(QQQ 20%p를 BOXX로 되돌림).<br>
     운용 시작일을 넣으면 그 날 이전에 시작된 무장은 물려받지 않습니다. 비우면 백테스트와 똑같은 상태를 이어받습니다.</div>
 </div>
 
@@ -563,19 +570,29 @@ function paintFresh(barDate, src){
 }
 // ═══════════════════════════════════════════════════════════
 
-// ══ X1 배분표 + 크래쉬 트랑슈 ═══════════════════════════════
-// 스윕 v1.9(2026-09-26) 확정안 X1 (= A안 배분 + 트랑슈 1단). 백테스트 엔진(simulate·crashStep)과 같은 규칙을 그대로 재생한다.
-//   배분   = STRONG QQQ40·TQQQ30·BOXX30 / MID BOXX100 / OUT BOXX100 (포트 전체 기준 %)
+// ══ Z1/Y1/X1 배분표 + 크래쉬 트랑슈 ═══════════════════════════════
+// 스윕 v1.9(2026-09-26~27) 확정안. 단계 Z1(Q20·T30·B50) → Y1(Q30·T30·B40) → X1(Q40·T30·B30), 트랑슈 1단. 백테스트 엔진(simulate·crashStep)과 같은 규칙을 그대로 재생한다.
+//   배분   = STRONG Z1 QQQ20·TQQQ30·BOXX50 / Y1 Q30·T30·B40 / X1 Q40·T30·B30 · MID BOXX100 · OUT BOXX100 (포트 전체 기준 %)
 //   무장   = IN → OUT 으로 바뀐 봉
 //   단수   = 무장 후 52주 고점 대비 '최저' 낙폭이 −15% 를 뚫으면 1단 (계단은 1개뿐)
-//   투입   = STRONG 인 봉에서만. 포트의 20%p 를 BOXX → QQQ (→ Q60·T30·B10)
+//   투입   = STRONG 인 봉에서만. 포트의 20%p 를 BOXX → QQQ (Z1 → Q40·T30·B30, X1 → Q60·T30·B10)
 //   목표가 = 첫 투입 봉의 52주 고점
-//   청산   = 종가가 목표가에 닿는 봉 (레짐 무관, 즉시). QQQ 20%p 를 BOXX 로 되돌린다 (→ Q40·T30·B30)
+//   청산   = 종가가 목표가에 닿는 봉 (레짐 무관, 즉시). QQQ 20%p 를 BOXX 로 되돌린다 (→ 단계 원래 표)
 //   매매   = 레짐이 바뀌는 날은 그날 총액으로 전 자산을 새 표대로(전체 리밸) · 같은 레짐에서 트랑슈만 바뀌면 바뀐 자산만
 //            · 연 1회(새해 첫 거래일) 정기 리밸로 표대로 복원
 const PLAN = { S:{QQQ:40,QLD:0,TQQQ:30}, M:{QQQ:0,QLD:0,TQQQ:0}, O:{QQQ:0,QLD:0,TQQQ:0},
-               trn:{lev:[-15], unit:20, src:'BOXX', dst:'QQQ'}, W:252 };
+               trn:{lev:[-15], unit:20, src:'BOXX', dst:'QQQ'}, W:252 };   // S 는 applyStage 가 단계에 맞춰 덮어쓴다
 const TRN_TXT = PLAN.trn.src+'→'+PLAN.trn.dst;
+// [2026-09-27] 운용 단계 Z1 → Y1 → X1 (TQQQ 30 고정, BOXX 50→40→30). 트랑슈 규칙은 세 단계 모두 같다.
+const STAGES = { Z1:{QQQ:20,TQQQ:30}, Y1:{QQQ:30,TQQQ:30}, X1:{QQQ:40,TQQQ:30} };
+let STAGE='Z1';
+function applyStage(id){
+  if(!STAGES[id]) id='Z1'; STAGE=id;
+  PLAN.S={QQQ:STAGES[id].QQQ, QLD:0, TQQQ:STAGES[id].TQQQ};
+  const b=100-PLAN.S.QQQ-PLAN.S.TQQQ, d=document.getElementById('plan-desc'), t=document.getElementById('plan-trn');
+  if(d) d.innerHTML='<b>'+id+'</b> STRONG(QQQ '+PLAN.S.QQQ+' · TQQQ '+PLAN.S.TQQQ+' · BOXX '+b+')';
+  if(t){ const a=planTarget(2,0), z=planTarget(2,1); t.textContent=planShort(a)+' → '+planShort(z); }
+}
 function trnCap(){ const S_=PLAN.S; return PLAN.trn.src==='BOXX' ? 100-S_.QQQ-S_.QLD-S_.TQQQ : S_[PLAN.trn.src]; }
 function trnSize(n){ return Math.min(n*PLAN.trn.unit, Math.max(0,trnCap())); }
 function planTarget(reg,nDep){
@@ -757,7 +774,7 @@ document.getElementById('f-bounce').classList.toggle('dim',S.useR);
 document.getElementById('p-bounce').disabled=S.useR;
 // ══ [저장] API 키 · 로그 시크릿 기기별 기억 (localStorage) ═══
 (function(){
-  const F=['api-key','log-secret','trn-since','trn-value'];
+  const F=['api-key','log-secret','trn-since','trn-value','trn-stage'];
   F.forEach(id=>{
     const el=document.getElementById(id); if(!el) return;
     // 사파리 프라이빗 모드 등에서 localStorage 접근 자체가 예외를 던진다.
@@ -768,9 +785,11 @@ document.getElementById('p-bounce').disabled=S.useR;
     el.addEventListener('change',()=>{
       try{ localStorage.setItem('sig:'+id, el.value); }catch(e){}
       // 시작일·평가액을 고치면 마지막 판정으로 다시 그린다 (재수신 없음). 시작일은 상태 자체가 바뀌므로 다시 계산
-      if(id.slice(0,4)==='trn-' && LAST_R){ if(id==='trn-since'){ LAST_R._trn=computeTrn(LAST_R); render(LAST_R); } renderAux(LAST_R); }
+      if(id==='trn-stage') applyStage(el.value);
+      if(id.slice(0,4)==='trn-' && LAST_R){ if(id==='trn-since'||id==='trn-stage'){ LAST_R._trn=computeTrn(LAST_R); render(LAST_R); } renderAux(LAST_R); }
     });
   });
+  applyStage((document.getElementById('trn-stage')||{}).value||'Z1');   // 저장된 단계(없으면 Z1)로 시작
 })();
 // ═══════════════════════════════════════════════════════════
 </script>
