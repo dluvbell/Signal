@@ -503,64 +503,121 @@ function stateName(r){ return r===0?'OUT' : r===2?'STRONG' : 'MID'; }
 // [2026-09-30] 1번/3번 · A안 — MID는 코어 유지(Q35/B65 등) 또는 코어 매도(B100)로 기록된다. 키는 그대로라 .gs 는 손댈 필요 없음.
 function assetName(r,R){ const t=(R&&R._trn&&R._trn.target)?R._trn.target:planTarget(r,0,R&&R.core); return planShort(t); }
 
+// [2026-09-30] 밀린 날 채움
+//   며칠 안 눌렀다가 나중에 눌러도, 이 기기에서 마지막으로 기록한 봉의 다음 거래일부터 오늘 판정 전날까지를
+//   「그날 눌렀다면 나왔을 판정」으로 다시 계산해(그날까지의 데이터만 쓴다) 날짜순으로 먼저 보내고, 마지막에 오늘 판정을 보낸다.
+//   시트(.gs)는 날짜가 같은 행을 덮어쓰므로 중복 행은 생기지 않는다 — 다른 기기로 이미 기록한 날은 같은 값으로 덮어쓸 뿐. .gs 는 손댈 필요 없음.
+//   채운 줄은 src 칸이 '밀린 날 채움 · …' 으로 시작하고, ts 칸은 실제로 기록한 시각이다.
+const LOG_KEY='sig:lastlog';   // 이 기기에서 시트에 마지막으로 기록한 봉 날짜
+const FILL_MAX=120;            // 한 번에 채우는 최대 거래일 수(약 6개월)
+let LOG_BUSY=false;            // 채우는 중에 다시 눌러도 겹쳐 보내지 않는다
+function getLastLog(){ try{ return localStorage.getItem(LOG_KEY)||''; }catch(e){ return ''; } }
+function setLastLog(d){ try{ const p=localStorage.getItem(LOG_KEY)||''; if(!p||d>p) localStorage.setItem(LOG_KEY,d); }catch(e){} }
+// 이 기기에서 처음 추적할 때: 직전 실행일의 전날 봉까지는 그때 기록된 것으로 본다(직전 실행일 봉부터 다시 보냄 — 덮어쓰기라 안전).
+function seedLastLog(){
+  if(!PREV_RUN) return '';
+  const p=PREV_RUN.split('-'), d=new Date(+p[0],+p[1]-1,+p[2]); if(isNaN(d)) return '';
+  d.setDate(d.getDate()-1); return ymd(d);
+}
+// k번째 봉까지만 있었을 때의 판정 = 그날 눌렀다면 나왔을 값 (지표·상태기계·A안·트랑슈 모두 과거만 본다)
+function computeAt(FULL,k){
+  const save=RAW; RAW=FULL.slice(0,k+1);
+  try{ const r=runEngine(); r._trn=computeTrn(r); return r; }
+  finally{ RAW=save; }
+}
+function buildRow(R, src){
+  const arr = R._regArr || [];
+  const prev = arr.length>=2 ? arr[arr.length-2] : null;
+  const cur  = R.regime;
+  const coreSw = (prev===1 && cur===1 && R.core!==R.prevCore);   // [A안] MID 안에서 코어만 바뀐 날도 '전환'으로 기록
+  const params = `state=${S.state} MA${val('p-ma')} EMA${val('p-ema')} ADXp${val('p-adx-p')}/T${val('p-adx-t')} `
+               + `ATRp${val('p-atr-p')}/M${val('p-atr-m')} k=${val('p-k')} m=${val('p-m')}% `
+               + `vol=${val('p-vol')}%/bw${val('p-bw')}%/win${val('p-volwin')} `
+               + `E=${S.useE?'ON':'OFF'} R=${S.useR?'ON':'OFF'} `
+               + `plan=${STAGES[STAGE].lab} A안x${Math.round(PLAN.midA.x*100)}${cur===1?(R.core?' core=ON':' core=OFF'):''}${R.ref!=null?' ref='+R.ref.toFixed(2):''}`;
+  const row = {
+    ts: new Date().toISOString(),
+    date: R.date,
+    state: stateName(cur),
+    prevState: prev===null ? '' : stateName(prev),
+    changed: (prev===null || (prev===cur && !coreSw)) ? 'FALSE' : 'TRUE',
+    asset: assetName(cur,R),
+    close: R.close,
+    sma: R.sma,
+    ema: R.ema,
+    smaOverEma: (R.sma!=null && R.ema) ? +((R.sma/R.ema - 1)*100).toFixed(3) : '',
+    adx: R.adx,
+    atr: R.atr,
+    atrStop: R.atrStop,
+    highPeak: R.highPeak,
+    vol: R.vol,
+    volUp: R.volUp,
+    volDown: R.volDown,
+    early: R.early ? 'TRUE' : 'FALSE',
+    exitCause: R.exitCause || '',
+    params, src
+  };
+  return row;
+}
+async function postRow(row){
+  // text/plain → CORS preflight 회피 (Apps Script 웹앱 표준 패턴)
+  const res = await fetch(LOG_URL, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({ secret: logSecret(), system:'MASTERPLAN', row })
+  });
+  return await res.json();
+}
+// 페이지를 열 때 — 이 기기가 어디까지 기록했는지
+function paintLogLine(){
+  const lg=document.getElementById('log-status'); if(!lg || !LOG_URL || !logSecret()) return;
+  const last=getLastLog(); if(!last) return;
+  lg.textContent='📒 이 기기의 마지막 시트 기록: '+kDate(last)+' 봉 · 그 뒤로 밀린 날은 다음 판정 때 함께 기록됩니다';
+  lg.style.color='#888';
+}
+
 async function logToSheet(R, src){
   if(!LOG_URL || !logSecret()) return;   // 시크릿 없으면 로깅 건너뜀
+  if(LOG_BUSY) return;                   // 앞선 기록(밀린 날 채움)이 아직 도는 중
+  LOG_BUSY=true;
   const lg = document.getElementById('log-status');
-  try{
-    const arr = R._regArr || [];
-    const prev = arr.length>=2 ? arr[arr.length-2] : null;
-    const cur  = R.regime;
-    const coreSw = (prev===1 && cur===1 && R.core!==R.prevCore);   // [A안] MID 안에서 코어만 바뀐 날도 '전환'으로 기록
-    const params = `state=${S.state} MA${val('p-ma')} EMA${val('p-ema')} ADXp${val('p-adx-p')}/T${val('p-adx-t')} `
-                 + `ATRp${val('p-atr-p')}/M${val('p-atr-m')} k=${val('p-k')} m=${val('p-m')}% `
-                 + `vol=${val('p-vol')}%/bw${val('p-bw')}%/win${val('p-volwin')} `
-                 + `E=${S.useE?'ON':'OFF'} R=${S.useR?'ON':'OFF'} `
-                 + `plan=${STAGES[STAGE].lab} A안x${Math.round(PLAN.midA.x*100)}${cur===1?(R.core?' core=ON':' core=OFF'):''}${R.ref!=null?' ref='+R.ref.toFixed(2):''}`;
-    const row = {
-      ts: new Date().toISOString(),
-      date: R.date,
-      state: stateName(cur),
-      prevState: prev===null ? '' : stateName(prev),
-      changed: (prev===null || (prev===cur && !coreSw)) ? 'FALSE' : 'TRUE',
-      asset: assetName(cur,R),
-      close: R.close,
-      sma: R.sma,
-      ema: R.ema,
-      smaOverEma: (R.sma!=null && R.ema) ? +((R.sma/R.ema - 1)*100).toFixed(3) : '',
-      adx: R.adx,
-      atr: R.atr,
-      atrStop: R.atrStop,
-      highPeak: R.highPeak,
-      vol: R.vol,
-      volUp: R.volUp,
-      volDown: R.volDown,
-      early: R.early ? 'TRUE' : 'FALSE',
-      exitCause: R.exitCause || '',
-      params, src
-    };
-    if(lg){ lg.textContent='📝 시트 기록 중...'; lg.style.color='#888'; }
-    // text/plain → CORS preflight 회피 (Apps Script 웹앱 표준 패턴)
-    const res = await fetch(LOG_URL, {
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ secret: logSecret(), system:'MASTERPLAN', row })
-    });
-    const j = await res.json();
-    if(lg){
-      if(j.ok){ lg.textContent=`📗 시트 기록 완료 (${j.mode==='update'?'갱신':'추가'} · ${j.date})`; lg.style.color='#4ade80'; }
-      else if(j.err==='bad secret'){
-        const k=logSecret();
-        // [진단] 무엇을 보냈는지 표시 — 원인 특정용 (값 전체는 노출 안 함)
-        lg.innerHTML='📕 bad secret · 보낸 값의 길이 '+k.length+'자'
-          +'<br><span style="color:#fbbf24">Apps Script의 SECRET 과 글자가 정확히 같은지 확인하십시오 (앞뒤 공백·따옴표 주의).</span>';
-        lg.style.color='#f87171';
-      }
-      else    { lg.textContent='📕 시트 기록 실패: '+(j.err||'?'); lg.style.color='#f87171'; }
+  const say=(t,c)=>{ if(lg){ lg.textContent=t; lg.style.color=c||'#888'; } };
+  const FULL=RAW;
+  let done=0, skipped=0;
+  const partTxt=()=>done?' · 밀린 '+done+'일은 기록됨, 나머지는 다음 판정 때 이어서 채웁니다':'';
+  const fail=(j)=>{
+    if(j.err==='bad secret'){
+      const k=logSecret();
+      // [진단] 무엇을 보냈는지 표시 — 원인 특정용 (값 전체는 노출 안 함)
+      if(lg){ lg.innerHTML='📕 bad secret · 보낸 값의 길이 '+k.length+'자'
+        +'<br><span style="color:#fbbf24">Apps Script의 SECRET 과 글자가 정확히 같은지 확인하십시오 (앞뒤 공백·따옴표 주의).</span>';
+        lg.style.color='#f87171'; }
     }
+    else say('📕 시트 기록 실패: '+(j.err||'?')+partTxt(), '#f87171');
+  };
+  try{
+    let last=getLastLog();
+    if(!last) last=seedLastLog();
+    let miss=[];
+    if(last) for(let k=0;k<FULL.length-1;k++){ const d=FULL[k].date; if(d>last && d<R.date) miss.push(k); }
+    if(miss.length>FILL_MAX){ skipped=miss.length-FILL_MAX; miss=miss.slice(-FILL_MAX); }
+    for(const k of miss){
+      const Rk=computeAt(FULL,k);
+      say('📝 밀린 날 기록 중 '+(done+1)+'/'+miss.length+' · '+Rk.date);
+      const j=await postRow(buildRow(Rk, '밀린 날 채움 · '+src));
+      if(!j.ok){ fail(j); return; }
+      setLastLog(Rk.date); done++;
+    }
+    say(done?'📝 오늘 판정 기록 중...':'📝 시트 기록 중...');
+    const j=await postRow(buildRow(R, src));
+    if(!j.ok){ fail(j); return; }
+    setLastLog(R.date);
+    say('📗 시트 기록 완료 ('+(done?'밀린 '+done+'일 채움 + 오늘 ':'')+(j.mode==='update'?'갱신':'추가')+' · '+j.date+')'
+        +(skipped?' · 너무 오래된 '+skipped+'일은 건너뜀(한 번에 최대 '+FILL_MAX+'거래일)':''), '#4ade80');
   }catch(err){
     console.warn('시트 기록 실패:', err);
-    if(lg){ lg.textContent='📕 시트 기록 실패 (네트워크/URL 확인)'; lg.style.color='#f87171'; }
-  }
+    say('📕 시트 기록 실패 (네트워크/URL 확인)'+partTxt(), '#f87171');
+  }finally{ LOG_BUSY=false; }
 }
 // ═══════════════════════════════════════════════════════════
 
@@ -847,6 +904,7 @@ document.getElementById('p-bounce').disabled=S.useR;
   });
   applyStage((document.getElementById('trn-stage')||{}).value||'P1');   // 저장된 단계(없거나 옛 Z1/Y1/X1이면 1번)로 시작
 })();
+paintLogLine();   // [밀린 날 채움] 이 기기의 마지막 기록일
 // ═══════════════════════════════════════════════════════════
 </script>
 </body>
