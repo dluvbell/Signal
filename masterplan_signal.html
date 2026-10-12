@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MasterPlan — 3-State Regime Signal Tower · 운용안 ③</title>
+<title>MasterPlan — 3-State Regime Signal Tower · 운용안 ③ · vol24/창23</title>
+<!-- 2026-10-11 신호 변경: 레짐 변동성 임계 23 → 24 · 실현변동성 창 21 → 23일 (밴드 5% 그대로 → 강등 25.2 / 승격 22.8). 근거: 한 칸 흔들기에서 23/21이 vol 22 벼랑 한 칸 위의 뾰족한 봉우리였고, 가상역사에서 24/23이 띠(vol 23~25 · 창 21~25)의 가운데 — 중앙 CAGR 18.7→19.2 · 나쁜 10% MDD −42.4→−41.7 · 수익↓ 세계 −50% 확률 21→17%. 대가: 실제 역사에서 −20%대 낙폭 7→10번 · 2022년 −3.1→−14.3%. 그 밖의 신호·배분은 그대로. 신호 계산식은 그대로 — 칸의 기본값만 바뀐다(이 두 칸은 기기에 저장되지 않으므로 파일을 바꾸면 바로 새 값으로 판정한다). 레짐 감시기 기준선(MON_BASE)은 그대로 둔다(연 레짐 전환 수가 3.7회로 같다). -->
 <!-- 2026-10-11 운용안 ③ (2026-10-09 결정): STRONG QQQ70·TQQQ30 · MID A안 코어 QQQ 35 · 손절 10% · OUT BOXX 100 · 연 1회 리밸. 크래쉬 트랑슈(패널·자동 산출·주문)와 운용 단계(1번/3번) 선택을 없앴다. 주문 상자는 '오늘 주문' 칸으로 남긴다. 신호 엔진·레짐·A안 판정·시트 기록 열(키·순서·개수)은 그대로 — asset·params 칸의 값만 새 배분으로 바뀐다. -->
 <!-- 2026-10-08 운용안 변경(BOXX 0 + 트랑슈): STRONG 1번 QQQ95·TQQQ5 / 3번 QQQ90·TQQQ10 · MID A안 코어 QQQ 35(STRONG 표와 따로) · 트랑슈 QQQ→TQQQ 7.5%p × 2단(−15·−30) · 한 번만 뜨는 '운용안 변경' 안내. 신호 엔진·레짐·A안 판정·트랑슈 상태기계·시트 기록 키는 그대로. -->
 <!-- 2026-10-01 검수 반영: 경미-8 STRONG 이탈 설명(트랑슈 동반 매도) · 경미-9 지표 워밍업을 백테스트(V42 규약)와 같게 — 전 이력 레짐 일치 · 제안-1 옛 기준일 기록 막기 · 제안-2 기록 중 재클릭 안내 · 장중(미확정) 봉 제외 · 내장 데이터 2009-07-03(휴장일) 가짜 봉 삭제·2026-09-30까지 연장 -->
@@ -94,7 +95,8 @@
   <b>운용안이 바뀌었습니다 (운용안 ③ · 2026-10-09 결정)</b><br>
   STRONG QQQ 70 · TQQQ 30 · MID 코어 QQQ 35 · BOXX 65 (손절 10%) · OUT BOXX 100 · 연 1회 리밸. <b>크래쉬 트랑슈와 1번/3번 단계는 없어졌습니다.</b><br>
   계좌가 아직 옛 배분(예: QQQ 95 · TQQQ 5, 또는 트랑슈가 들어간 표)이면, 이번 판정의 <b>목표 배분</b>대로 다음 거래일에 한 번 전부 맞춥니다. 그 뒤로는 '오늘 주문' 칸을 따릅니다.<br>
-  A안 기준가는 그대로 이어서 씁니다(이 파일이 전 이력에서 다시 계산합니다).
+  A안 기준가는 그대로 이어서 씁니다(이 파일이 전 이력에서 다시 계산합니다).<br>
+  <b>신호도 바뀌었습니다 (2026-10-11)</b>: 레짐 변동성 임계 23 → <b>24</b> · 실현변동성 창 21 → <b>23일</b>. 강등선 25.2% · 승격선 22.8%. 이 판정이 예전 판정과 다르면 이 판정을 따릅니다.
   <div style="margin-top:8px"><button type="button" id="plan-notice-ok" style="font:inherit;font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer">맞췄습니다 · 다시 보지 않기</button></div>
 </div>
 
@@ -143,11 +145,11 @@
 <div class="panel" id="regime-panel">
   <div class="panel-title">3-State 레짐 (STRONG ↔ MID)</div>
   <div class="grid g3">
-    <div id="f-vol" class="field"><label>레짐 변동성 임계 %</label><input type="number" id="p-vol" value="23" min="5" max="80" step="0.5"></div>
+    <div id="f-vol" class="field"><label>레짐 변동성 임계 %</label><input type="number" id="p-vol" value="24" min="5" max="80" step="0.5"></div>
     <div id="f-bw" class="field"><label>히스테리시스 밴드폭 %</label><input type="number" id="p-bw" value="5" min="0" max="50" step="1"></div>
-    <div id="f-volwin" class="field"><label>실현변동성 윈도우(일)</label><input type="number" id="p-volwin" value="21" min="5" max="60"></div>
+    <div id="f-volwin" class="field"><label>실현변동성 윈도우(일)</label><input type="number" id="p-volwin" value="23" min="5" max="60"></div>
   </div>
-  <div class="hint">변동성 &lt; 임계×(1−밴드폭) → STRONG · 변동성 &gt; 임계×(1+밴드폭) → MID · 그 사이는 현 상태 유지 (밴드는 절대폭이 아니라 <b>비율</b>: 23%·5% → 21.85 / 24.15)</div>
+  <div class="hint">변동성 &lt; 임계×(1−밴드폭) → STRONG · 변동성 &gt; 임계×(1+밴드폭) → MID · 그 사이는 현 상태 유지 (밴드는 절대폭이 아니라 <b>비율</b>: 24%·5% → 22.8 / 25.2 · 2026-10-11에 23%·21일에서 24%·23일로 바꿈)</div>
 </div>
 
 <button class="btn" id="btn-check">▶ 오늘 신호 확인</button>
@@ -802,7 +804,7 @@ document.getElementById('f-bounce').classList.toggle('dim',S.useR);
 document.getElementById('p-bounce').disabled=S.useR;
 // ══ [2026-10-11] 운용안 변경 안내(③) — 이 기기에서 '다시 보지 않기'를 누를 때까지 한 번 뜬다 ═══
 (function(){
-  const KEY='sig:plan-ack', VER='P3-20261011', box=document.getElementById('plan-notice'), ok=document.getElementById('plan-notice-ok');
+  const KEY='sig:plan-ack', VER='P3-20261011-v24w23', box=document.getElementById('plan-notice'), ok=document.getElementById('plan-notice-ok');
   if(!box) return;
   let seen=''; try{ seen=localStorage.getItem(KEY)||''; }catch(e){}
   if(seen!==VER) box.style.display='block';
