@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MasterPlan — 3-State Regime Signal Tower · 운용안 ③ · vol24/창23</title>
+<title>MasterPlan — 3-State Regime Signal Tower · 플랜 A 1.7배 · vol24/창23</title>
 <!-- 2026-10-11 신호 변경: 레짐 변동성 임계 23 → 24 · 실현변동성 창 21 → 23일 (밴드 5% 그대로 → 강등 25.2 / 승격 22.8). 근거: 한 칸 흔들기에서 23/21이 vol 22 벼랑 한 칸 위의 뾰족한 봉우리였고, 가상역사에서 24/23이 띠(vol 23~25 · 창 21~25)의 가운데 — 중앙 CAGR 18.7→19.2 · 나쁜 10% MDD −42.4→−41.7 · 수익↓ 세계 −50% 확률 21→17%. 대가: 실제 역사에서 −20%대 낙폭 7→10번 · 2022년 −3.1→−14.3%. 그 밖의 신호·배분은 그대로. 신호 계산식은 그대로 — 칸의 기본값만 바뀐다(이 두 칸은 기기에 저장되지 않으므로 파일을 바꾸면 바로 새 값으로 판정한다). 레짐 감시기 기준선(MON_BASE)은 그대로 둔다(연 레짐 전환 수가 3.7회로 같다). -->
+<!-- 2026-10-22 플랜 A 1.7배 (2026-10-14 결정, 10-15·10-21 유지): STRONG 배분만 QQQ70·TQQQ30 → QQQ65·TQQQ35. 신호(SMA65·EMA200·ADX14/10·ATR14/7.5·m3·k3·변동성 24/창 23/밴드 5)·MID A안 코어 35·손절 10·OUT BOXX 100·연 1회 리밸은 그대로. 안내 상자 버전 P17-20261022(한 번 뜸). 시트 기록 키·열 그대로(메모 문자열의 plan 표기만 A17). -->
 <!-- 2026-10-11 운용안 ③ (2026-10-09 결정): STRONG QQQ70·TQQQ30 · MID A안 코어 QQQ 35 · 손절 10% · OUT BOXX 100 · 연 1회 리밸. 크래쉬 트랑슈(패널·자동 산출·주문)와 운용 단계(1번/3번) 선택을 없앴다. 주문 상자는 '오늘 주문' 칸으로 남긴다. 신호 엔진·레짐·A안 판정·시트 기록 열(키·순서·개수)은 그대로 — asset·params 칸의 값만 새 배분으로 바뀐다. -->
 <!-- 2026-10-08 운용안 변경(BOXX 0 + 트랑슈): STRONG 1번 QQQ95·TQQQ5 / 3번 QQQ90·TQQQ10 · MID A안 코어 QQQ 35(STRONG 표와 따로) · 트랑슈 QQQ→TQQQ 7.5%p × 2단(−15·−30) · 한 번만 뜨는 '운용안 변경' 안내. 신호 엔진·레짐·A안 판정·트랑슈 상태기계·시트 기록 키는 그대로. -->
 <!-- 2026-10-01 검수 반영: 경미-8 STRONG 이탈 설명(트랑슈 동반 매도) · 경미-9 지표 워밍업을 백테스트(V42 규약)와 같게 — 전 이력 레짐 일치 · 제안-1 옛 기준일 기록 막기 · 제안-2 기록 중 재클릭 안내 · 장중(미확정) 봉 제외 · 내장 데이터 2009-07-03(휴장일) 가짜 봉 삭제·2026-09-30까지 연장 -->
@@ -90,13 +91,13 @@
 <body>
 
 <h1><span class="dot" id="live-dot"></span> 3-State Regime Signal Tower</h1>
-<div class="sub">매일 장 마감 후 1회 · QQQ 종가 기준 · 집행은 다음 거래일 · <span id="plan-desc"><b>운용안 ③</b> STRONG(QQQ 70 · TQQQ 30) / MID A안(코어 QQQ 35 · BOXX 65 ↔ BOXX 100) / OUT(BOXX 100)</span> · 트랑슈 없음</div>
+<div class="sub">매일 장 마감 후 1회 · QQQ 종가 기준 · 집행은 다음 거래일 · <span id="plan-desc"><b>플랜 A 1.7배</b> STRONG(QQQ 65 · TQQQ 35) / MID A안(코어 QQQ 35 · BOXX 65 ↔ BOXX 100) / OUT(BOXX 100)</span> · 트랑슈 없음</div>
 <div id="plan-notice" class="warn y" style="display:none;margin:0 0 14px">
-  <b>운용안이 바뀌었습니다 (운용안 ③ · 2026-10-09 결정)</b><br>
-  STRONG QQQ 70 · TQQQ 30 · MID 코어 QQQ 35 · BOXX 65 (손절 10%) · OUT BOXX 100 · 연 1회 리밸. <b>크래쉬 트랑슈와 1번/3번 단계는 없어졌습니다.</b><br>
-  계좌가 아직 옛 배분(예: QQQ 95 · TQQQ 5, 또는 트랑슈가 들어간 표)이면, 이번 판정의 <b>목표 배분</b>대로 다음 거래일에 한 번 전부 맞춥니다. 그 뒤로는 '오늘 주문' 칸을 따릅니다.<br>
+  <b>STRONG 배분이 바뀌었습니다 (플랜 A 1.7배 · 2026-10-14 결정)</b><br>
+  STRONG QQQ 70 · TQQQ 30 → <b>QQQ 65 · TQQQ 35</b>. MID 코어 QQQ 35 · BOXX 65 (손절 10%) · OUT BOXX 100 · 연 1회 리밸은 그대로입니다. 신호도 그대로입니다.<br>
+  지금 STRONG인데 계좌가 QQQ 70 · TQQQ 30이면, 다음 거래일에 한 번 <b>QQQ 65 · TQQQ 35</b>로 맞춥니다(상태가 바뀌지 않았으므로 '오늘 주문' 칸은 이 조정을 따로 알려 주지 않습니다). MID·OUT이면 할 일이 없습니다. 그 뒤로는 '오늘 주문' 칸을 따릅니다.<br>
   A안 기준가는 그대로 이어서 씁니다(이 파일이 전 이력에서 다시 계산합니다).<br>
-  <b>신호도 바뀌었습니다 (2026-10-11)</b>: 레짐 변동성 임계 23 → <b>24</b> · 실현변동성 창 21 → <b>23일</b>. 강등선 25.2% · 승격선 22.8%. 이 판정이 예전 판정과 다르면 이 판정을 따릅니다.
+  (참고) 신호는 2026-10-11에 바꾼 그대로입니다: 레짐 변동성 임계 <b>24</b> · 실현변동성 창 <b>23일</b> · 강등선 25.2% · 승격선 22.8%.
   <div style="margin-top:8px"><button type="button" id="plan-notice-ok" style="font:inherit;font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer">맞췄습니다 · 다시 보지 않기</button></div>
 </div>
 
@@ -183,16 +184,16 @@
 
 <div id="monitor-panel" style="max-width:760px;margin:14px auto 0"></div>
 
-<!-- ══ 오늘 주문 (2026-10-11 운용안 ③ · 트랑슈 없음) — 판정 뒤에 나온다 ══ -->
+<!-- ══ 오늘 주문 (2026-10-22 플랜 A 1.7배 · 트랑슈 없음) — 판정 뒤에 나온다 ══ -->
 <div class="panel" id="aux-panel" style="max-width:760px;margin:14px auto 0;display:none">
-  <div class="panel-title">오늘 주문 &mdash; 운용안 ③</div>
+  <div class="panel-title">오늘 주문 &mdash; 플랜 A 1.7배</div>
   <div id="aux-body"></div>
   <div class="grid g2" style="margin-top:14px">
     <div><label>포트 전체 평가액 (선택)</label>
       <input type="number" id="trn-value" step="1" placeholder="넣으면 주문 금액까지"></div>
     <div></div>
   </div>
-  <div class="hint">배분표: STRONG QQQ 70 · TQQQ 30 / MID A안 &mdash; 코어 유지 QQQ 35 · BOXX 65, 코어 매도 BOXX 100 / OUT BOXX 100.<br>
+  <div class="hint">배분표: STRONG QQQ 65 · TQQQ 35 / MID A안 &mdash; 코어 유지 QQQ 35 · BOXX 65, 코어 매도 BOXX 100 / OUT BOXX 100.<br>
     레짐이 바뀌는 날(MID 안에서 코어만 바뀌는 날 포함)은 그날 총액으로 포트 전체를 새 표대로 맞춥니다 &middot; 새해 첫 거래일에 정기 리밸 &middot; 집행은 다음 거래일.</div>
 </div>
 
@@ -529,7 +530,7 @@ function buildRow(R, src){
                + `ATRp${val('p-atr-p')}/M${val('p-atr-m')} k=${val('p-k')} m=${val('p-m')}% `
                + `vol=${val('p-vol')}%/bw${val('p-bw')}%/win${val('p-volwin')} `
                + `E=${S.useE?'ON':'OFF'} R=${S.useR?'ON':'OFF'} `
-               + `plan=③ Q${PLAN.S.QQQ}/T${PLAN.S.TQQQ} A안x${Math.round(PLAN.midA.x*100)} c${PLAN.core}${cur===1?(R.core?' core=ON':' core=OFF'):''}${R.ref!=null?' ref='+R.ref.toFixed(2):''}`;
+               + `plan=A17 Q${PLAN.S.QQQ}/T${PLAN.S.TQQQ} A안x${Math.round(PLAN.midA.x*100)} c${PLAN.core}${cur===1?(R.core?' core=ON':' core=OFF'):''}${R.ref!=null?' ref='+R.ref.toFixed(2):''}`;
   const row = {
     ts: new Date().toISOString(),
     date: R.date,
@@ -667,13 +668,14 @@ function paintFresh(barDate, src){
 
 // ══ 운용안 ③ 배분표 · A안(강등 완충) · 오늘 주문 ════════════════════════
 // 2026-10-11 — 운용안 ③(2026-10-09 결정). 2026-10-08 안(1번 Q95·T5 / 3번 Q90·T10 + 트랑슈 QQQ→TQQQ 7.5%p × 2단)에서 바뀜.
-//   배분   = STRONG QQQ70·TQQQ30 (BOXX 0) · OUT BOXX100 (포트 전체 기준 %)
+//   배분   = STRONG QQQ65·TQQQ35 (BOXX 0, 2026-10-22부터 · 이전 ③ QQQ70·TQQQ30) · OUT BOXX100 (포트 전체 기준 %)
 //   MID    = A안: STRONG을 떠난 날 종가 = 기준가. 코어 유지 = QQQ 35 + BOXX 65 (TQQQ 없음 · 코어는 STRONG 표와 따로) ·
 //            종가 < 기준가×0.9 → 코어 매도(BOXX100) · 판 뒤 종가 ≥ 기준가 → 재매수(OUT을 거쳐 와도 같은 기준가) · 다음 STRONG에서 기준가 폐기
 //   트랑슈 = 없음 (2026-10-09 결정 — 크래쉬 뒤 STRONG에서 배율을 올리는 규칙은 꼬리를 키운다)
 //   매매   = 레짐(코어 켜짐·꺼짐 포함)이 바뀌는 날은 그날 총액으로 전 자산을 새 표대로(전체 리밸)
 //            · 연 1회(새해 첫 거래일) 정기 리밸로 표대로 복원 · 집행은 다음 거래일
-const PLAN = { S:{QQQ:70,QLD:0,TQQQ:30}, M:{QQQ:0,QLD:0,TQQQ:0}, O:{QQQ:0,QLD:0,TQQQ:0},
+const PLAN = { S:{QQQ:65,QLD:0,TQQQ:35},   // [2026-10-22] 플랜 A 1.7배 (10-14 결정) — 이전 ③ QQQ70·TQQQ30
+               M:{QQQ:0,QLD:0,TQQQ:0}, O:{QQQ:0,QLD:0,TQQQ:0},
                core:35,                 // A안 MID 코어 QQQ % (STRONG 표의 QQQ 몫과 따로)
                midA:{x:0.10} };         // midA.x = 코어 손절 10%
 function planTarget(reg,core){
@@ -804,7 +806,7 @@ document.getElementById('f-bounce').classList.toggle('dim',S.useR);
 document.getElementById('p-bounce').disabled=S.useR;
 // ══ [2026-10-11] 운용안 변경 안내(③) — 이 기기에서 '다시 보지 않기'를 누를 때까지 한 번 뜬다 ═══
 (function(){
-  const KEY='sig:plan-ack', VER='P3-20261011-v24w23', box=document.getElementById('plan-notice'), ok=document.getElementById('plan-notice-ok');
+  const KEY='sig:plan-ack', VER='P17-20261022', box=document.getElementById('plan-notice'), ok=document.getElementById('plan-notice-ok');
   if(!box) return;
   let seen=''; try{ seen=localStorage.getItem(KEY)||''; }catch(e){}
   if(seen!==VER) box.style.display='block';
