@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MasterPlan — 3-State Regime Signal Tower · 플랜 A-문(MA200) 1.7배 · vol24/창23</title>
+<title>MasterPlan — 3-State Regime Signal Tower · 플랜 A 1.7배 · vol24/창23</title>
 <!-- 2026-10-11 신호 변경: 레짐 변동성 임계 23 → 24 · 실현변동성 창 21 → 23일 (밴드 5% 그대로 → 강등 25.2 / 승격 22.8). 근거: 한 칸 흔들기에서 23/21이 vol 22 벼랑 한 칸 위의 뾰족한 봉우리였고, 가상역사에서 24/23이 띠(vol 23~25 · 창 21~25)의 가운데 — 중앙 CAGR 18.7→19.2 · 나쁜 10% MDD −42.4→−41.7 · 수익↓ 세계 −50% 확률 21→17%. 대가: 실제 역사에서 −20%대 낙폭 7→10번 · 2022년 −3.1→−14.3%. 그 밖의 신호·배분은 그대로. 신호 계산식은 그대로 — 칸의 기본값만 바뀐다(이 두 칸은 기기에 저장되지 않으므로 파일을 바꾸면 바로 새 값으로 판정한다). 레짐 감시기 기준선(MON_BASE)은 그대로 둔다(연 레짐 전환 수가 3.7회로 같다). -->
-<!-- 2026-10-22c 검수 반영(엔진 무변경): ① 판정 카드 노트와 200일선 3% 경고의 배분 숫자를 PLAN에서 읽는다(종전엔 QQQ 65 · TQQQ 35 · 35를 직접 적어, PLAN만 고치면 틀린 숫자가 나올 수 있었다). ② 시트 메모의 gate200 값 — STRONG에서만 CLOSED/OPEN, MID·OUT 날엔 NA(below)/NA(above)(문은 STRONG에서만 작동하므로). 시트 키·열·안내 상자 버전은 그대로. -->
+<!-- 2026-10-23 플랜 A 1.7배로 되돌림 (2026-10-23 결정): 200일선 문은 매매에 쓰지 않는다. PLAN.gate.main=false. 판정 카드·주문 상자·시트 params에는 플랜 A-문(문 달았다면의 배분)을 그림자(기록용)로만 남긴다. 신호·MID A안·OUT·연 1회 리밸 그대로. 시트 키·열 그대로. -->
 <!-- 2026-10-22b 플랜 A-문(MA200) (2026-10-22 결정): STRONG인데 QQQ 종가 ≤ 200일 단순이동평균이면 TQQQ 35를 QQQ로 → QQQ 100(1.0배). 종가가 200일선 위로 오면 다시 QQQ65·TQQQ35. 문이 열리고 닫히는 날도 전체 리밸(다음 거래일). 신호·MID A안·OUT·연 1회 리밸은 그대로. 판정 카드·주문 상자에 200일선과 문 상태, 문 없는 플랜 A(그림자) 표시. 시트 기록 키·열 그대로 — asset 값이 문 닫힘이면 Q100, 메모 문자열에 plan=A17G · gate200 · ma200 · shadow. 안내 상자 버전 P17G-20261022. -->
 <!-- 2026-10-22 플랜 A 1.7배 (2026-10-14 결정, 10-15·10-21 유지): STRONG 배분만 QQQ70·TQQQ30 → QQQ65·TQQQ35. 신호(SMA65·EMA200·ADX14/10·ATR14/7.5·m3·k3·변동성 24/창 23/밴드 5)·MID A안 코어 35·손절 10·OUT BOXX 100·연 1회 리밸은 그대로. 안내 상자 버전 P17-20261022(한 번 뜸). 시트 기록 키·열 그대로(메모 문자열의 plan 표기만 A17). -->
 <!-- 2026-10-11 운용안 ③ (2026-10-09 결정): STRONG QQQ70·TQQQ30 · MID A안 코어 QQQ 35 · 손절 10% · OUT BOXX 100 · 연 1회 리밸. 크래쉬 트랑슈(패널·자동 산출·주문)와 운용 단계(1번/3번) 선택을 없앴다. 주문 상자는 '오늘 주문' 칸으로 남긴다. 신호 엔진·레짐·A안 판정·시트 기록 열(키·순서·개수)은 그대로 — asset·params 칸의 값만 새 배분으로 바뀐다. -->
@@ -93,13 +93,13 @@
 <body>
 
 <h1><span class="dot" id="live-dot"></span> 3-State Regime Signal Tower</h1>
-<div class="sub">매일 장 마감 후 1회 · QQQ 종가 기준 · 집행은 다음 거래일 · <span id="plan-desc"><b>플랜 A-문(MA200)</b> STRONG(QQQ 65 · TQQQ 35 — QQQ 종가가 200일선 이하면 QQQ 100) / MID A안(코어 QQQ 35 · BOXX 65 ↔ BOXX 100) / OUT(BOXX 100)</span> · 트랑슈 없음</div>
+<div class="sub">매일 장 마감 후 1회 · QQQ 종가 기준 · 집행은 다음 거래일 · <span id="plan-desc"><b>플랜 A 1.7배</b> STRONG(QQQ 65 · TQQQ 35) / MID A안(코어 QQQ 35 · BOXX 65 ↔ BOXX 100) / OUT(BOXX 100)</span> · 트랑슈 없음 · 200일선 문은 그림자 기록만</div>
 <div id="plan-notice" class="warn y" style="display:none;margin:0 0 14px">
-  <b>200일선 문이 생겼습니다 (플랜 A-문(MA200) · 2026-10-22 결정)</b><br>
-  STRONG일 때 <b>QQQ 종가가 200일 단순이동평균(200일선) 이하면 TQQQ 35를 QQQ로</b> 바꿔 <b>QQQ 100</b>(1.0배)을 듭니다. 종가가 200일선 위로 올라오면 다시 <b>QQQ 65 · TQQQ 35</b>입니다. 문이 닫히고 열리는 날도 상태가 바뀐 날처럼 다음 거래일에 전체를 새 표대로 맞춥니다.<br>
+  <b>플랜 A 1.7배로 돌아왔습니다 — 200일선 문 없음 (2026-10-23 결정)</b><br>
+  STRONG은 언제나 <b>QQQ 65 · TQQQ 35</b>입니다. QQQ 종가가 200일선 아래여도 배분을 바꾸지 않습니다. 하루 전 판(플랜 A-문)으로 거래한 날이 없다면 할 일은 없습니다.<br>
   MID A안(코어 QQQ 35 · 손절 10%) · OUT(BOXX 100) · 신호 · 연 1회 리밸은 그대로입니다.<br>
-  처음 열었을 때: 판정 카드의 목표 배분과 계좌를 비교해, 다르면 다음 거래일에 한 번 목표 배분대로 맞춥니다(문이 오늘 바뀐 날이 아니면 '오늘 주문' 칸은 이 조정을 따로 알려 주지 않습니다). 그 뒤로는 '오늘 주문' 칸을 따릅니다.<br>
-  판정 카드의 <b>'문 없는 플랜 A (그림자)'</b>는 재검토 때 비교하려고 기록만 하는 값입니다 — 따라 하지 않습니다.<br>
+  처음 열었을 때: 판정 카드의 목표 배분과 계좌를 비교해, 다르면 다음 거래일에 한 번 목표 배분대로 맞춥니다. 그 뒤로는 '오늘 주문' 칸을 따릅니다.<br>
+  판정 카드의 <b>'플랜 A-문 (그림자)'</b>는 문을 달았다면 어땠을지 재검토 때 비교하려고 기록만 하는 값입니다 — 따라 하지 않습니다.<br>
   (참고) 신호는 2026-10-11에 바꾼 그대로입니다: 레짐 변동성 임계 <b>24</b> · 실현변동성 창 <b>23일</b> · 강등선 25.2% · 승격선 22.8%.
   <div style="margin-top:8px"><button type="button" id="plan-notice-ok" style="font:inherit;font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer">맞췄습니다 · 다시 보지 않기</button></div>
 </div>
@@ -181,25 +181,25 @@
     <div class="metric"><div class="k">사이클 고점</div><div class="v" id="m-peak">—</div></div>
     <div class="metric"><div class="k">A안 기준가 (STRONG을 떠난 날 종가)</div><div class="v" id="m-ref">—</div></div>
     <div class="metric"><div class="k">A안 코어 손절선 · 재매수선</div><div class="v" id="m-core">—</div></div>
-    <div class="metric"><div class="k">200일선 (문) · 종가와 거리</div><div class="v" id="m-gate">—</div></div>
-    <div class="metric"><div class="k">문 없는 플랜 A (그림자 · 기록용)</div><div class="v" id="m-shadow">—</div></div>
+    <div class="metric"><div class="k">200일선 · 종가와 거리 (그림자용 · 매매 없음)</div><div class="v" id="m-gate">—</div></div>
+    <div class="metric"><div class="k">플랜 A-문 (그림자 · 기록용)</div><div class="v" id="m-shadow">—</div></div>
   </div>
   <div id="warns"></div>
 </div>
 
 <div id="monitor-panel" style="max-width:760px;margin:14px auto 0"></div>
 
-<!-- ══ 오늘 주문 (2026-10-22 플랜 A-문(MA200) · 트랑슈 없음) — 판정 뒤에 나온다 ══ -->
+<!-- ══ 오늘 주문 (2026-10-23 플랜 A 1.7배 · 트랑슈 없음) — 판정 뒤에 나온다 ══ -->
 <div class="panel" id="aux-panel" style="max-width:760px;margin:14px auto 0;display:none">
-  <div class="panel-title">오늘 주문 &mdash; 플랜 A-문(MA200)</div>
+  <div class="panel-title">오늘 주문 &mdash; 플랜 A 1.7배</div>
   <div id="aux-body"></div>
   <div class="grid g2" style="margin-top:14px">
     <div><label>포트 전체 평가액 (선택)</label>
       <input type="number" id="trn-value" step="1" placeholder="넣으면 주문 금액까지"></div>
     <div></div>
   </div>
-  <div class="hint">배분표: STRONG QQQ 65 · TQQQ 35 (QQQ 종가 ≤ 200일선이면 QQQ 100) / MID A안 &mdash; 코어 유지 QQQ 35 · BOXX 65, 코어 매도 BOXX 100 / OUT BOXX 100.<br>
-    레짐이 바뀌는 날(MID 안에서 코어만 바뀌는 날, STRONG 안에서 200일선 문만 바뀌는 날 포함)은 그날 총액으로 포트 전체를 새 표대로 맞춥니다 &middot; 새해 첫 거래일에 정기 리밸 &middot; 집행은 다음 거래일.</div>
+  <div class="hint">배분표: STRONG QQQ 65 · TQQQ 35 / MID A안 &mdash; 코어 유지 QQQ 35 · BOXX 65, 코어 매도 BOXX 100 / OUT BOXX 100. 200일선은 그림자 기록만(매매 없음).<br>
+    레짐이 바뀌는 날(MID 안에서 코어만 바뀌는 날 포함)은 그날 총액으로 포트 전체를 새 표대로 맞춥니다 &middot; 새해 첫 거래일에 정기 리밸 &middot; 집행은 다음 거래일.</div>
 </div>
 
 <script>
@@ -373,7 +373,7 @@ function render(R){
   const st=document.getElementById('v-state'), as=document.getElementById('v-asset'), nt=document.getElementById('v-note');
   vd.className='verdict';
   const vs = v => (v!=null && isFinite(v)) ? v.toFixed(1) : '—';   // 워밍업 구간 널가드
-  const PT=planTarget(R.regime,R.core,R.gate), PT0=planTarget(R.regime,R.core,false);   // PT0 = 문 없는 플랜 A(그림자)
+  const PT=planTarget(R.regime,R.core,GM(R.gate)), PT0=planTarget(R.regime,R.core,R.gate);   // [2026-10-23] PT = 운용(플랜 A 1.7배) · PT0 = 그림자(플랜 A-문)
   const px=v=>'$'+v.toFixed(2), CXp=Math.round(PLAN.midA.x*100);
   if(R.regime===0){vd.classList.add('out');st.textContent='OUT';as.textContent='→ '+planLabel(PT)+' (전액 대피)';
     nt.textContent=(R.exitCause==='stop'?'ATR 손절선 이탈':'추세 이탈 (SMA < EMA200)')
@@ -381,12 +381,12 @@ function render(R){
   // [2026-08-12] 판정 사유를 실제 조건으로 갈라 쓴다. 종전에는 STRONG이면 무조건 '< volDown',
   //   MID면 무조건 '> volUp'으로 찍혀, 히스테리시스 밴드 안에서 '유지'되는 날 거짓 부등호가 나왔다
   //   (예: 2026-08-11 MID, 실현변동성 24.0인데 "24.0% > 24.2%"). 판정 로직은 무변경 — 문구만 정정.
-  else if(R.regime===2){vd.classList.add('strong');st.textContent=R.gate?'STRONG · 200일선 아래':'STRONG';as.textContent='→ '+planLabel(PT)+(R.gate?' (200일선 문 닫힘 — TQQQ 없이 QQQ)':'');
+  else if(R.regime===2){vd.classList.add('strong');st.textContent=GM(R.gate)?'STRONG · 200일선 아래':'STRONG';as.textContent='→ '+planLabel(PT)+(GM(R.gate)?' (200일선 문 닫힘 — TQQQ 없이 QQQ)':'');
     if(S.state!==3)          nt.textContent='2-state 모드 — IN=STRONG';
     else if(R.vol==null)     nt.textContent='실현변동성 산출 전 (워밍업)';
     else if(R.vol<R.volDown) nt.textContent=`실현변동성 ${vs(R.vol)}% < ${vs(R.volDown)}% (조용한 추세장)`;
     else                     nt.textContent=`실현변동성 ${vs(R.vol)}% — 밴드(${vs(R.volDown)}~${vs(R.volUp)}%) 안 · STRONG 유지 · MID 강등선 ${vs(R.volUp)}%`;
-    if(R.sma200!=null) nt.textContent+=R.gate?` · 종가 ${px(R.close)} ≤ 200일선 ${px(R.sma200)} → 문 닫힘(종가가 넘으면 ${planLabel(PT0)})`:` · 200일선 ${px(R.sma200)} 위 → 문 열림`;}
+    if(R.sma200!=null && PLAN.gate && PLAN.gate.main) nt.textContent+=R.gate?` · 종가 ${px(R.close)} ≤ 200일선 ${px(R.sma200)} → 문 닫힘(종가가 넘으면 QQQ 65 · TQQQ 35)`:` · 200일선 ${px(R.sma200)} 위 → 문 열림`;}
   else {vd.classList.add('mid');
     // [A안] MID = 코어 유지(QQQ 35 + BOXX 65) 또는 코어 매도(BOXX 100)
     st.textContent = R.core ? 'MID · 코어 유지' : 'MID · 코어 매도';
@@ -418,15 +418,15 @@ function render(R){
 
   // [2026-10-22] 200일선 문 · 그림자
   { const gEl=document.getElementById('m-gate'), shEl=document.getElementById('m-shadow');
-    if(gEl) gEl.textContent = R.sma200!=null ? '$'+R.sma200.toFixed(2)+' · '+((R.close/R.sma200-1)*100>=0?'+':'')+((R.close/R.sma200-1)*100).toFixed(1)+'% · '+(R.close<=R.sma200?'아래 (STRONG이면 문 닫힘)':'위 (문 열림)') : '— (200봉 전)';
-    if(shEl) shEl.textContent = planLabel(PT0)+(planLabel(PT0)!==planLabel(PT)?' — 지금 운용안과 다름':' — 같음'); }
+    if(gEl) gEl.textContent = R.sma200!=null ? '$'+R.sma200.toFixed(2)+' · '+((R.close/R.sma200-1)*100>=0?'+':'')+((R.close/R.sma200-1)*100).toFixed(1)+'% · '+(R.close<=R.sma200?'아래':'위') : '— (200봉 전)';
+    if(shEl) shEl.textContent = planLabel(PT0)+(planLabel(PT0)!==planLabel(PT)?' — 운용안과 다름 (따르지 않음)':' — 같음'); }
   // 경고
   const w=[];
   if(R.regime!==0){
     if(gap<1.5&&gap>=0)w.push(['o','🟠 MA−EMA 갭 1.5% 이내 — 추세 이탈(OUT) 임박 주의']);
     if(R.atrStop!=null&&R.close<=R.atrStop+R.atr)w.push(['y','🟡 종가가 ATR 손절선 + ATR×1 이내 — 손절 임박 주의']);
-    if(R.regime===2 && R.sma200!=null && Math.abs(R.close/R.sma200-1)<=0.03)
-      w.push(['b','🔵 종가가 200일선($'+R.sma200.toFixed(2)+') 3% 이내 — 종가가 '+(R.gate?'넘으면 다음 거래일 '+gateTxt(true):'선 이하로 내려가면 다음 거래일 '+gateTxt(false))]);
+    if(R.regime===2 && R.sma200!=null && PLAN.gate && PLAN.gate.main && Math.abs(R.close/R.sma200-1)<=0.03)
+      w.push(['b','🔵 종가가 200일선($'+R.sma200.toFixed(2)+') 3% 이내 — 종가가 '+(R.gate?'넘으면 다음 거래일 QQQ 35를 TQQQ로(QQQ 65 · TQQQ 35)':'선 이하로 내려가면 다음 거래일 TQQQ 35를 QQQ로(QQQ 100)')]);
     if(S.state===3){
       const d1=Math.abs(R.vol-R.volUp),d2=Math.abs(R.vol-R.volDown);
       if(Math.min(d1,d2)<2)w.push(['b','🔵 변동성이 STRONG↔MID 경계 ±2% 이내 — 상태 전환 임박']);
@@ -514,7 +514,7 @@ function stateName(r){ return r===0?'OUT' : r===2?'STRONG' : 'MID'; }
 // [2026-09-30] 1번/3번 · A안 — MID는 코어 유지(Q35/B65 등) 또는 코어 매도(B100)로 기록된다. 키는 그대로라 .gs 는 손댈 필요 없음.
 // [2026-10-08] BOXX 0 안 — STRONG은 Q95/T5 · Q87.5/T12.5 같은 값으로 기록된다. 키는 그대로.
 // [2026-10-11] 운용안 ③ — STRONG Q70/T30 · MID Q35/B65(코어 유지) 또는 B100(코어 매도) · OUT B100. 트랑슈 없음. 키·열은 그대로.
-function assetName(r,R){ return planShort(planTarget(r, R&&R.core, R&&R.gate)); }   // [2026-10-22] 문 닫힘이면 Q100
+function assetName(r,R){ return planShort(planTarget(r, R&&R.core, GM(R&&R.gate))); }   // [2026-10-23] 운용 배분(문 없음)
 
 // [2026-09-30] 밀린 날 채움
 //   며칠 안 눌렀다가 나중에 눌러도, 이 기기에서 마지막으로 기록한 봉의 다음 거래일부터 오늘 판정 전날까지를
@@ -543,13 +543,13 @@ function buildRow(R, src){
   const prev = arr.length>=2 ? arr[arr.length-2] : null;
   const cur  = R.regime;
   const coreSw = (prev===1 && cur===1 && R.core!==R.prevCore);   // [A안] MID 안에서 코어만 바뀐 날도 '전환'으로 기록
-  const gateSw = (prev===2 && cur===2 && R.gate!==R.prevGate);   // [2026-10-22] STRONG 안에서 200일선 문만 바뀐 날도 전환으로 기록
+  const gateSw = (prev===2 && cur===2 && GM(R.gate)!==GM(R.prevGate));   // [2026-10-23] 문을 운용에 쓸 때만 전환으로 기록(지금은 늘 false)
   const params = `state=${S.state} MA${val('p-ma')} EMA${val('p-ema')} ADXp${val('p-adx-p')}/T${val('p-adx-t')} `
                + `ATRp${val('p-atr-p')}/M${val('p-atr-m')} k=${val('p-k')} m=${val('p-m')}% `
                + `vol=${val('p-vol')}%/bw${val('p-bw')}%/win${val('p-volwin')} `
                + `E=${S.useE?'ON':'OFF'} R=${S.useR?'ON':'OFF'} `
-               + `plan=A17G Q${PLAN.S.QQQ}/T${PLAN.S.TQQQ} A안x${Math.round(PLAN.midA.x*100)} c${PLAN.core}${cur===1?(R.core?' core=ON':' core=OFF'):''}${R.ref!=null?' ref='+R.ref.toFixed(2):''}`
-               + ` gate${(PLAN.gate&&PLAN.gate.n)||200}=${cur===2?(R.gate?'CLOSED':'OPEN'):(R.sma200==null?'NA':(R.gate?'NA(below)':'NA(above)'))}${R.sma200!=null?' ma200='+R.sma200.toFixed(2):''} shadow=${planShort(planTarget(cur,R.core,false))}`;   // [2026-10-22] 메모 문자열만 — 키·열 그대로
+               + `plan=${(PLAN.gate&&PLAN.gate.main)?'A17G':'A17'} Q${PLAN.S.QQQ}/T${PLAN.S.TQQQ} A안x${Math.round(PLAN.midA.x*100)} c${PLAN.core}${cur===1?(R.core?' core=ON':' core=OFF'):''}${R.ref!=null?' ref='+R.ref.toFixed(2):''}`
+               + ` gate${(PLAN.gate&&PLAN.gate.n)||200}=${R.gate?'CLOSED':'OPEN'}${R.sma200!=null?' ma200='+R.sma200.toFixed(2):''} shadow${(PLAN.gate&&PLAN.gate.main)?'':'G'}=${planShort(planTarget(cur,R.core,(PLAN.gate&&PLAN.gate.main)?false:R.gate))}`;   // [2026-10-23] shadowG = 플랜 A-문(그림자) 배분 · 메모 문자열만 — 키·열 그대로
   const row = {
     ts: new Date().toISOString(),
     date: R.date,
@@ -691,14 +691,15 @@ function paintFresh(barDate, src){
 //   MID    = A안: STRONG을 떠난 날 종가 = 기준가. 코어 유지 = QQQ 35 + BOXX 65 (TQQQ 없음 · 코어는 STRONG 표와 따로) ·
 //            종가 < 기준가×0.9 → 코어 매도(BOXX100) · 판 뒤 종가 ≥ 기준가 → 재매수(OUT을 거쳐 와도 같은 기준가) · 다음 STRONG에서 기준가 폐기
 //   트랑슈 = 없음 (2026-10-09 결정 — 크래쉬 뒤 STRONG에서 배율을 올리는 규칙은 꼬리를 키운다)
-//   200일선 문 = STRONG인데 QQQ 종가 ≤ 200일 단순이동평균이면 TQQQ 몫을 QQQ로(QQQ 100). 2026-10-22 결정(플랜 A-문(MA200)). 문이 바뀌는 날도 전체 리밸
+//   200일선 문 = 2026-10-22 채택 → 2026-10-23 되돌림(7년·인출 시험에서 문 없는 안이 이김). 매매에는 안 쓰고(gate.main=false) 플랜 A-문을 그림자로 기록
 //   매매   = 레짐(코어 켜짐·꺼짐 포함)이 바뀌는 날은 그날 총액으로 전 자산을 새 표대로(전체 리밸)
 //            · 연 1회(새해 첫 거래일) 정기 리밸로 표대로 복원 · 집행은 다음 거래일
 const PLAN = { S:{QQQ:65,QLD:0,TQQQ:35},   // [2026-10-22] 플랜 A 1.7배 (10-14 결정) — 이전 ③ QQQ70·TQQQ30
                M:{QQQ:0,QLD:0,TQQQ:0}, O:{QQQ:0,QLD:0,TQQQ:0},
                core:35,                 // A안 MID 코어 QQQ % (STRONG 표의 QQQ 몫과 따로)
                midA:{x:0.10},           // midA.x = 코어 손절 10%
-               gate:{n:200} };          // [2026-10-22] 플랜 A-문(MA200): STRONG인데 QQQ 종가 ≤ 200일 단순이동평균이면 TQQQ·QLD 몫을 QQQ로(= QQQ 100)
+               gate:{n:200, main:false} };   // [2026-10-23] main=false: 문은 그림자(플랜 A-문) 계산에만 쓴다. true로 바꾸면 플랜 A-문으로 운용
+const GM = g => (PLAN.gate && PLAN.gate.main) ? !!g : false;   // [2026-10-23] 운용에 쓰는 문 상태(지금은 늘 열림)
 function planTarget(reg,core,gate){
   let r = reg===2?PLAN.S : reg===1?PLAN.M : PLAN.O;
   if(reg===1 && core) r = {QQQ:PLAN.core, QLD:0, TQQQ:0};   // [A안] MID 코어 = QQQ 35(나머지 BOXX)
@@ -712,13 +713,6 @@ function jo(w,pair){ const t=String(w).replace(/<[^>]*>/g,'').replace(/\s*\([^()
   else if(/[가-힣]/.test(c)){ const k=(c.charCodeAt(0)-0xAC00)%28; f=k===0?0:(k===8?2:1); }
   if(pair==='으로로') return f===1?'으로':'로';
   return f?pair[0]:pair[1]; }
-// [2026-10-22c] 200일선 문 안내 — 숫자를 PLAN에서 읽는다. open=true: 문이 열릴 때(QQQ 일부 → 레버리지) · false: 닫힐 때(레버리지 → QQQ)
-function gateTxt(open){
-  const L=[]; if(PLAN.S.QLD>0)L.push('QLD '+PLAN.S.QLD); if(PLAN.S.TQQQ>0)L.push('TQQQ '+PLAN.S.TQQQ);
-  const lev=L.join(' · '), sum=PLAN.S.QLD+PLAN.S.TQQQ, names=L.map(x=>x.split(' ')[0]).join('·');
-  return open ? 'QQQ '+sum+jo(sum,'을를')+' '+names+jo(names,'으로로')+'('+planLabel(planTarget(2,false,false))+')'
-              : lev+jo(lev,'을를')+' QQQ로('+planLabel(planTarget(2,false,true))+')';
-}
 function planShort(t){ const p=[]; if(t.QQQ>0)p.push('Q'+t.QQQ); if(t.QLD>0)p.push('L'+t.QLD); if(t.TQQQ>0)p.push('T'+t.TQQQ); if(t.BOXX>0)p.push('B'+t.BOXX); return p.join('/'); }
 
 // 오늘·어제 봉의 레짐·코어 → 목표 배분 (주문 상자용)
@@ -727,9 +721,10 @@ function computeOrd(R){
   if(!reg || !RAW.length || reg.length !== RAW.length || reg.length < 2) return null;
   const L = reg.length-1;
   const cNow=(reg[L]===1&&core[L]===1), cPrev=(reg[L-1]===1&&core[L-1]===1);
-  const gA=(R && R._gateArr)||[], gNow=(reg[L]===2&&gA[L]===1), gPrev=(reg[L-1]===2&&gA[L-1]===1);   // [2026-10-22] 200일선 문(STRONG에서만 뜻이 있다)
+  const gA=(R && R._gateArr)||[], gRaw=(reg[L]===2&&gA[L]===1), gRawPrev=(reg[L-1]===2&&gA[L-1]===1);   // [2026-10-22] 200일선 문(STRONG에서만 뜻이 있다)
+  const gNow=GM(gRaw), gPrev=GM(gRawPrev);   // [2026-10-23] 운용에 쓰는 문(지금은 늘 열림) — 그림자는 gRaw로
   return { reg:reg[L], prevReg:reg[L-1], core:cNow, prevCore:cPrev, gate:gNow, prevGate:gPrev,
-           sma200:(R && R._sma200)?R._sma200[L]:null, shadow:planTarget(reg[L],cNow,false),
+           sma200:(R && R._sma200)?R._sma200[L]:null, shadow:planTarget(reg[L],cNow,(PLAN.gate&&PLAN.gate.main)?false:gRaw),
            target:planTarget(reg[L],cNow,gNow), prevTarget:planTarget(reg[L-1],cPrev,gPrev),
            close:RAW[L].close, date:RAW[L].date };
 }
@@ -770,8 +765,8 @@ function renderOrder(R){
   }
   const m=+A.date.slice(5,7), dd=+A.date.slice(8,10);
   if(m===12 && dd>=24){ acts.push('연말 — 새해 첫 거래일에 <b>정기 리밸</b>: 그날 표대로 전 자산을 맞춥니다 ('+planLabel(T)+').'); if(title==='매매 없음') title='정기 리밸 예고'; }
-  if(!regSw) why.push('레짐·코어·200일선 문이 어제와 같습니다 ('+RGN[E1]+').');
-  if(planLabel(A.shadow)!==planLabel(T)) why.push('(그림자 · 기록용: 문 없는 플랜 A라면 '+planLabel(A.shadow)+')');
+  if(!regSw) why.push(((PLAN.gate&&PLAN.gate.main)?'레짐·코어·200일선 문이':'레짐·코어가')+' 어제와 같습니다 ('+RGN[E1]+').');
+  if(planLabel(A.shadow)!==planLabel(T)) why.push('(그림자 · 기록용 — 따르지 않음: '+((PLAN.gate&&PLAN.gate.main)?'문 없는 플랜 A':'플랜 A-문')+'이라면 '+planLabel(A.shadow)+')');
 
   const row=(k,v)=>'<div class="metric"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';
   body.innerHTML =
@@ -843,7 +838,7 @@ document.getElementById('f-bounce').classList.toggle('dim',S.useR);
 document.getElementById('p-bounce').disabled=S.useR;
 // ══ [2026-10-11] 운용안 변경 안내(③) — 이 기기에서 '다시 보지 않기'를 누를 때까지 한 번 뜬다 ═══
 (function(){
-  const KEY='sig:plan-ack', VER='P17G-20261022', box=document.getElementById('plan-notice'), ok=document.getElementById('plan-notice-ok');
+  const KEY='sig:plan-ack', VER='P17-20261023', box=document.getElementById('plan-notice'), ok=document.getElementById('plan-notice-ok');
   if(!box) return;
   let seen=''; try{ seen=localStorage.getItem(KEY)||''; }catch(e){}
   if(seen!==VER) box.style.display='block';
