@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MasterPlan — Signal Tower · 플랜 A 섞기판 3×3 (새 플랜 A ½ + 트라이팟 ⅔ ½)</title>
+<!-- 2026-11-04 재검토 점검 추가: '🔎 재검토 점검' 버튼을 누르면 지금 삼삼안을 재검토할 때인지 알려 준다. ① 성적(삼삼안 통 모형 곡선의 고점 대비 낙폭·고점 회복 못 한 기간·3년 연복리) ② 신호(TQQQ·QQQ를 든 채 QQQ가 빠진 폭·한 해 휩쏘 손실·매매일·레짐체인지 감시기) ③ 정기(QQQ −20% 하락이 끝남·5년·새해 연간 점검) ④ 심리(시그널대로 안 한 날). 🔴 문턱 = 이 파일의 내장 QQQ로 같은 모형을 돌려 잰 1999~2026 역사 최악 바로 바깥. 레짐체인지 감시기 기준선도 지금 신호 값으로 다시 잼. 판정·주문·시트 기록은 그대로. -->
 <!-- 2026-11-01 플랜 A 섞기판(3×3)으로 바꿈 (2026-10-31 결정): 목표 배분 = ½ 새 플랜 A + ½ 트라이팟 ⅔. 새 플랜 A = STRONG QQQ 50·TQQQ 50 / MID이고 SMA65 ≥ EMA200 QQQ 50·BOXX 50 / 그 밖(OUT·선행 진입 MID) BOXX 100 — MID 35·코어 10% 손절 없앰. 트라이팟 ⅔ = 강 QQQ 50·TQQQ 50 / 중 QQQ 100 / 현금 BOXX 100, 송팀장 공개 규칙(250일선 띠 ×1.01·×0.95, VIX 10일 평균 28·18, 252일 고점 대비 −9%) 그대로, QQQ 종가로 판정. VIX는 내장(CBOE 1999-03~2026-08-27) + Massive 지수(I:VIX) → CBOE 파일 → 손 입력 순서로 채운다. 목표가 바뀌는 날 전체 리밸 · 연 1회 정기 리밸 · 다음 거래일 집행. 신호 엔진(runEngine) 계산은 그대로(반환값에 _sma·_ema 배열만 더함). 현행 1.7(A안 코어 포함)은 그림자로 계산·기록만. 시트 키·열 그대로 — asset 값이 섞기판 배분, params 메모에 plan=MIX33 · A · T · VIX10 · old17(현행 1.7) · shadowG(플랜 A-문). VIX 중계(구글 Apps Script, CBOE → FRED)를 맨 먼저 시도. -->
 <!-- 2026-10-11 신호 변경: 레짐 변동성 임계 23 → 24 · 실현변동성 창 21 → 23일 (밴드 5% 그대로 → 강등 25.2 / 승격 22.8). 근거: 한 칸 흔들기에서 23/21이 vol 22 벼랑 한 칸 위의 뾰족한 봉우리였고, 가상역사에서 24/23이 띠(vol 23~25 · 창 21~25)의 가운데 — 중앙 CAGR 18.7→19.2 · 나쁜 10% MDD −42.4→−41.7 · 수익↓ 세계 −50% 확률 21→17%. 대가: 실제 역사에서 −20%대 낙폭 7→10번 · 2022년 −3.1→−14.3%. 그 밖의 신호·배분은 그대로. 신호 계산식은 그대로 — 칸의 기본값만 바뀐다(이 두 칸은 기기에 저장되지 않으므로 파일을 바꾸면 바로 새 값으로 판정한다). 레짐 감시기 기준선(MON_BASE)은 그대로 둔다(연 레짐 전환 수가 3.7회로 같다). -->
 <!-- 2026-10-23 플랜 A 1.7배로 되돌림 (2026-10-23 결정): 200일선 문은 매매에 쓰지 않는다. PLAN.gate.main=false. 판정 카드·주문 상자·시트 params에는 플랜 A-문(문 달았다면의 배분)을 그림자(기록용)로만 남긴다. 신호·MID A안·OUT·연 1회 리밸 그대로. 시트 키·열 그대로. -->
@@ -221,6 +222,13 @@
 </div>
 
 <div id="monitor-panel" style="max-width:760px;margin:14px auto 0"></div>
+
+<!-- ══ [2026-11-04] 재검토 점검 — 누르면 지금 삼삼안을 재검토할 때인지 알려 준다 ══ -->
+<div class="panel" id="review-panel" style="max-width:760px;margin:14px auto 0">
+  <div class="panel-title">재검토 점검 &mdash; 삼삼안을 다시 볼 때인가</div>
+  <button class="btn" id="btn-review" type="button">🔎 재검토 점검</button>
+  <div id="review-body" style="margin-top:10px"></div>
+</div>
 
 <!-- ══ 오늘 주문 (2026-11-01 플랜 A 섞기판 3×3) — 판정 뒤에 나온다 ══ -->
 <div class="panel" id="aux-panel" style="max-width:760px;margin:14px auto 0;display:none">
@@ -598,10 +606,11 @@ function render(R){
 
 // ── Massive(구 Polygon.io) fetch ────────────────────────────
 // [v36] 레짐체인지 감시기 — 백테스터 진단에서 산출한 기준선 대비 최근 250거래일 판정. 월1회 확인 권장.
+// [2026-11-04] 기준선을 지금 신호 값(변동성 24 · 창 23 · 밴드 5)과 이 파일의 내장 QQQ로 다시 잼. 옛 값: 스왑 6.4/8.7 · 변동성 34.7/53.7 · STRONG 31.
 const MON_BASE = {
-  swapAmber:6.4, swapRed:8.7,     // 연간 레짐스왑: 1999기점 상위5% / 평균+3σ
-  volAmber:34.7, volRed:53.7,     // 실현변동성 중앙값: 2010상위5% / 1999상위5%
-  strongFloor:31,                 // STRONG비율 하위5%(2010기점)
+  swapAmber:7.0, swapRed:8.8,     // 연간 레짐스왑: 1999기점 상위5% / 평균+3σ (역사 최대 11)
+  volAmber:26.0, volRed:45.2,     // 실현변동성 중앙값: 2010상위5% / 1999상위5% (역사 최대 61.5)
+  strongFloor:64,                 // STRONG비율 하위5%(2010기점, 변동성 25 밑인 날만)
   volNormalCeil:25                // ③ 조건: 이 밑이면 "변동성 정상"으로 간주
 };
 function renderMonitor(R){
@@ -648,7 +657,7 @@ function renderMonitor(R){
       ${row(g3,'③ STRONG 비율(조건부)', (strPct!=null?strPct.toFixed(0)+'%':'—'), '변동성 정상시 🟡<'+MON_BASE.strongFloor+'%')}
       <div style="margin-top:9px;font-size:11px;line-height:1.65;color:#cbd5e1">${notes.map(x=>'· '+x).join('<br>')}</div>
       <div style="margin-top:8px;font-size:9px;color:var(--muted);opacity:0.7;line-height:1.5">
-        기준선: 스왑=1999기점(상위5%/평균+3σ) · 변동성=2010상위5%/1999상위5% · STRONG=2010하위5%. ③은 변동성 정상일 때만 발동(위기 시 STRONG 0%는 정상 방어라 무시). 매년 백테스터 진단으로 갱신.
+        기준선: 스왑=1999기점(상위5%/평균+3σ) · 변동성=2010상위5%/1999상위5% · STRONG=2010하위5%. ③은 변동성 정상일 때만 발동(위기 시 STRONG 0%는 정상 방어라 무시). 2026-11-04 지금 신호 값으로 다시 잼.
       </div>
     </div></details>`;
 }
@@ -1023,6 +1032,141 @@ paintLogLine();   // [밀린 날 채움] 이 기기의 마지막 기록일
     rd.readAsText(f); });
   showMan(); paintVix('');
 })();
+// ══ [2026-11-04] 재검토 점검 — 버튼을 누르면 지금 삼삼안을 재검토할 때인지 알려 준다 ═══════════
+//   삼삼안 통 모형 곡선: 판정 다음 날 종가에 체결, 새해 첫 거래일 정기 리밸, 편도 0.01%(IBKR Tiered).
+//   TQQQ = QQQ 하루 수익 × 3 − (연방기금금리 + 0.40%) × 2 − 보수 0.84%, BOXX = 연방기금금리 − 0.15%(해 평균). 배당 없음(연 0.5%p 안팎 낮게 나옴).
+//   기준선은 이 파일의 내장 QQQ(1999-04~)로 같은 계산을 돌려 잰 역사 최악 바로 바깥에 둔다.
+const RVW = { start:'2026-11-04', cost:0.0001,
+  // 연방기금금리 해 평균(%, FRED FEDFUNDS) — 해마다 내장 자료를 갱신할 때 한 줄 더한다. 없는 해는 마지막 값을 쓴다.
+  ff:{1999:4.97,2000:6.24,2001:3.89,2002:1.67,2003:1.13,2004:1.35,2005:3.21,2006:4.96,2007:5.02,2008:1.93,2009:0.16,2010:0.18,
+      2011:0.10,2012:0.14,2013:0.11,2014:0.09,2015:0.13,2016:0.40,2017:1.00,2018:1.83,2019:2.16,2020:0.38,2021:0.08,2022:1.68,
+      2023:5.02,2024:5.14,2025:4.21,2026:3.67} };
+function rvwFF(y){ const k=Object.keys(RVW.ff).map(Number), m=Math.max(...k); return (RVW.ff[y]!=null?RVW.ff[y]:RVW.ff[Math.min(Math.max(y,Math.min(...k)),m)])/100; }
+function rvwModel(R){
+  const n=RAW.length, c=RAW.map(d=>d.close), mix=R._mixArr, cost=RVW.cost;
+  let hQ=0,hT=0,hB=1,cur=null; const eq=new Float64Array(n); eq[0]=1;
+  const pQ=new Float64Array(n), pT=new Float64Array(n); pQ[0]=1; pT[0]=1; const ev=[], td=[];
+  for(let i=1;i<n;i++){
+    const ff=rvwFF(+RAW[i].date.slice(0,4)), rB=Math.max(ff-0.0015,0)/252, fT=(2*(ff+0.004)+0.0084)/252;
+    const rQ=c[i]/c[i-1]-1, rT=Math.max(-0.99,3*rQ-fT);
+    pQ[i]=pQ[i-1]*(1+rQ); pT[i]=pT[i-1]*(1+rT); hQ*=1+rQ; hT*=1+rT; hB*=1+rB;
+    const tot=hQ+hT+hB, t=mix[i-1], key=t.QQQ+'/'+t.TQQQ;
+    const changed=(cur!==null&&key!==cur), newYear=RAW[i].date.slice(0,4)!==RAW[i-1].date.slice(0,4);
+    if(cur===null||changed||newYear){
+      const nQ=tot*t.QQQ/100, nT=tot*t.TQQQ/100, dq=nQ-hQ, dt=nT-hT, fee=cost*(Math.abs(dq)+Math.abs(dt)+Math.abs(dq+dt));
+      if(changed){ td.push(i); rvwEv(ev,i,dq,dt,tot,pQ[i],pT[i]); }
+      hQ=nQ; hT=nT; hB=tot-nQ-nT-fee; cur=key; }
+    eq[i]=hQ+hT+hB; }
+  return {eq,td,ev}; }
+function rvwEv(ev,i,dq,dt,tot,pq,pt){   // 현금으로 나가고 들어온 몫만 센다 (같은 날 QQQ↔TQQQ 갈아타기는 판 것이 아님)
+  const dE=dq+3*dt, push=(a,v,p)=>{ if(Math.abs(v)>1e-12) ev.push({i,a,v,tot,p}); };
+  if(dq*dt>=0){ push('Q',dq,pq); push('T',dt,pt); }
+  else if(dt<0){ if(dE<0) push('T',dE/3,pt); else if(dE>0) push('Q',dE,pq); }
+  else { if(dE>0) push('T',dE/3,pt); else if(dE<0) push('Q',dE,pq); } }
+function rvwWhip(ev,L){ if(L==null) L=Infinity;   // 판 뒤 다음에 같은 자산을 더 비싸게 되산 금액 ÷ 판 날 통 총액 — 판 해에 붙인다
+  const loss={};
+  for(const a of ['Q','T']){ const s=ev.filter(e=>e.a===a);
+    for(let k=0;k<s.length;k++){ if(s[k].v>=0||s[k].i>L) continue; let nb=null; for(let j=k+1;j<s.length;j++) if(s[j].v>0&&s[j].i<=L){ nb=s[j]; break; } if(!nb) continue;
+      const x=Math.min(-s[k].v,nb.v)*(nb.p/s[k].p-1)/s[k].tot; if(x>0){ const y=RAW[s[k].i].date.slice(0,4); loss[y]=(loss[y]||0)+x; } } }
+  return loss; }
+function rvwHold(R,pred){   // pred가 참인 날이 이어지는 동안, 그 구간 안 QQQ 종가 고점 대비 하락
+  const n=RAW.length, c=RAW.map(d=>d.close), mix=R._mixArr, out=new Float64Array(n); let pk=null;
+  for(let i=0;i<n;i++){ if(!pred(mix[i])){ pk=null; out[i]=0; continue; } if(pk===null||c[i]>pk) pk=c[i]; out[i]=c[i]/pk-1; }
+  return out; }
+function rvwUW(eq,i){ let pk=-1,pi=0; for(let k=0;k<=i;k++){ if(eq[k]>=pk){ pk=eq[k]; pi=k; } } return {dd:eq[i]/pk-1, years:(new Date(RAW[i].date)-new Date(RAW[pi].date))/864e5/365.25, peak:RAW[pi].date}; }
+function rvwQQQ20(L){ if(L==null) L=RAW.length-1;   // QQQ가 고점(종가) 대비 20% 넘게 빠진 하락 — 시작일, 바닥, 고점 회복일(끝)
+  const c=RAW.map(d=>d.close), eps=[]; let ath=c[0], athD=RAW[0].date, cur=null;
+  for(let i=0;i<=L;i++){
+    if(cur){ if(c[i]<cur.low){ cur.low=c[i]; cur.lowD=RAW[i].date; } if(c[i]>=cur.ref){ cur.end=RAW[i].date; eps.push(cur); cur=null; } }
+    if(c[i]>ath){ ath=c[i]; athD=RAW[i].date; }
+    if(!cur && c[i]/ath-1<=-0.20){ cur={ref:ath, peakD:athD, startD:RAW[i].date, low:c[i], lowD:RAW[i].date, end:null}; } }
+  return {eps, open:cur}; }
+function rvwMonitor(R,iEnd){   // 레짐체인지 감시기와 같은 셋 — iEnd에서 끝나는 252봉
+  const reg=R._regArr, rv=R._rvol, W=252, s=Math.max(1,iEnd-W+1);
+  let sw=0,inD=0,strD=0; const v=[];
+  for(let i=s;i<=iEnd;i++){ const p=reg[i-1],c=reg[i]; if(p!==0&&c!==0&&p!==c) sw++; if(c!==0){ inD++; if(c===2) strD++; } const x=rv[i]; if(x!=null&&isFinite(x)&&x>0) v.push(x); }
+  v.sort((a,b)=>a-b);
+  return {swap:sw*(252/(iEnd-s+1)), rvMed:v.length?v[Math.floor((v.length-1)/2)]:null, strPct:inD>0?strD/inD*100:null}; }
+
+// 문턱 — 🔴 = 이 모형으로 잰 1999~2026 역사 최악 바로 바깥(재검토), 🟡 = 다가옴(지켜볼 것), ⛔ = 버틸 한도(재정비)
+const RVW_TH = { dd:{y:-0.35,r:-0.42,x:-0.50}, uw:{y:3,r:4}, c3:{y:0,r:-0.09}, holdT:{y:-0.15,r:-0.20}, holdQ:{y:-0.30,r:-0.42},
+  whip:{y:0.15,r:0.20}, td:{y:20,r:28}, dev:{y:1,r:3},
+  hist:{dd:'−39.8% (2007-10→2008-07)', uw:'3.3년 (2000-03→2003-07)', c3:'−8.3% (2003-03)', holdT:'−15.6% (2021-11→2022-01)',
+        holdQ:'−39.1% (2000-03→2000-11)', whip:'17.4% (2018)', td:'27일 (2018-02~2019-02)'} };
+function rvwGet(k){ try{ return localStorage.getItem(k)||''; }catch(e){ return ''; } }
+function rvwSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function rvwAddYears(iso,y){ const p=iso.split('-'); return (+p[0]+y)+'-'+p[1]+'-'+p[2]; }
+function rvwAddMonths(iso,m){ const p=iso.split('-').map(Number), t=p[0]*12+(p[1]-1)+m; return Math.floor(t/12)+'-'+String(t%12+1).padStart(2,'0')+'-'+String(p[2]).padStart(2,'0'); }
+function rvwEval(R,L,today){   // L일 종가까지의 자료로 판정 (L 뒤 자료는 쓰지 않는다)
+  const T=RVW_TH, M=rvwModel(R), U=rvwUW(M.eq,L), rows=[];
+  const add=(grp,label,val,g,basis)=>rows.push({grp,label,val,g,basis});
+  const pct=x=>(x*100).toFixed(1)+'%';
+  // ① 성적이 역사 밖으로
+  add(1,'삼삼안 통 고점 대비 낙폭', pct(U.dd)+(U.dd<0?' (고점 '+U.peak+')':''), U.dd<=T.dd.x?3:U.dd<=T.dd.r?2:U.dd<=T.dd.y?1:0, '🟡 '+pct(T.dd.y)+' · 🔴 '+pct(T.dd.r)+' · ⛔ '+pct(T.dd.x)+' · 역사 최악 '+T.hist.dd);
+  const uw=U.dd<0?U.years:0;
+  add(1,'고점을 되찾지 못한 기간', uw.toFixed(1)+'년', uw>=T.uw.r?2:uw>=T.uw.y?1:0, '🟡 '+T.uw.y+'년 · 🔴 '+T.uw.r+'년 · 역사 최악 '+T.hist.uw);
+  const c3=L>=756?Math.pow(M.eq[L]/M.eq[L-756],1/3)-1:null;
+  add(1,'최근 3년 연복리', c3==null?'—':pct(c3), c3==null?0:c3<T.c3.r?2:c3<T.c3.y?1:0, '🟡 0% 밑 · 🔴 '+pct(T.c3.r)+' 밑 · 역사 최악 '+T.hist.c3);
+  // ② 신호가 제 일을 못 할 때
+  const hT=rvwHold(R,m=>m.TQQQ>0), hQ=rvwHold(R,m=>m.QQQ+m.TQQQ>0); let ht=0,hq=0;
+  for(let i=Math.max(0,L-251);i<=L;i++){ ht=Math.min(ht,hT[i]); hq=Math.min(hq,hQ[i]); }
+  add(2,'TQQQ를 든 채 QQQ가 빠진 폭 (최근 1년)', pct(ht), ht<=T.holdT.r?2:ht<=T.holdT.y?1:0, '🟡 '+pct(T.holdT.y)+' · 🔴 '+pct(T.holdT.r)+' · 역사 최악 '+T.hist.holdT);
+  add(2,'QQQ·TQQQ를 든 채 QQQ가 빠진 폭 (최근 1년)', pct(hq), hq<=T.holdQ.r?2:hq<=T.holdQ.y?1:0, '🟡 '+pct(T.holdQ.y)+' · 🔴 '+pct(T.holdQ.r)+' · 역사 최악 '+T.hist.holdQ);
+  const W=rvwWhip(M.ev,L), yNow=RAW[L].date.slice(0,4), yPrev=String(+yNow-1), wN=W[yNow]||0, wP=W[yPrev]||0;
+  add(2,'한 해 휩쏘 손실 (판 뒤 더 비싸게 되산 금액 ÷ 통)', yNow+' '+pct(wN)+' · '+yPrev+' '+pct(wP), Math.max(wN,wP)>T.whip.r?2:Math.max(wN,wP)>T.whip.y?1:0, '🟡 '+pct(T.whip.y)+' · 🔴 '+pct(T.whip.r)+' · 역사 최악 '+T.hist.whip);
+  const td=M.td.filter(k=>k>L-252&&k<=L).length;
+  add(2,'매매일 (최근 252거래일)', td+'일', td>T.td.r?2:td>T.td.y?1:0, '🟡 '+T.td.y+'일 · 🔴 '+T.td.r+'일 넘음 · 역사 최대 '+T.hist.td);
+  const mon=rvwMonitor(R,L), mRed=(mon.swap>MON_BASE.swapRed)||(mon.rvMed!=null&&mon.rvMed>MON_BASE.volRed)||(mon.strPct!=null&&mon.rvMed!=null&&mon.rvMed<MON_BASE.volNormalCeil&&mon.strPct<MON_BASE.strongFloor);
+  add(2,'레짐체인지 감시기 (플랜 A 쪽)', '스왑 '+mon.swap.toFixed(1)+'회 · 변동성 '+(mon.rvMed!=null?mon.rvMed.toFixed(1)+'%':'—')+' · STRONG '+(mon.strPct!=null?mon.strPct.toFixed(0)+'%':'—'), mRed?1:0, '감시기 🔴는 역사 안에서도 켜진 적이 있어 여기서는 🟡(관찰)');
+  // ③ 정기
+  const done=rvwGet('sig:rvw-done')||RVW.start, Q=rvwQQQ20(L);
+  const ended=Q.eps.filter(e=>e.end&&e.end>done).pop();
+  if(ended) add(3,'QQQ −20% 하락이 끝남', (ended.peakD+' 고점 → '+ended.lowD+' 바닥 '+pct(ended.low/ended.ref-1)+' → '+ended.end+' 회복'), 2, '하락이 끝나면 정기 재검토 (지침서)');
+  else if(Q.open) add(3,'QQQ −20% 하락 진행 중', Q.open.peakD+' 고점 대비 바닥 '+pct(Q.open.low/Q.open.ref-1)+' — 끝나면(고점 회복) 재검토', 1, '지침서');
+  else add(3,'QQQ −20% 하락', '마지막 재검토('+done+') 뒤 없음', 0, '하락이 끝나면 정기 재검토 (지침서)');
+  const due=rvwAddYears(done,5);
+  add(3,'5년 정기 재검토', '다음 '+due+' (마지막 '+done+')', today>=due?2:today>=rvwAddMonths(due,-6)?1:0, '5년마다 또는 QQQ −20% 하락이 끝난 뒤 중 빠른 쪽');
+  const yr=today.slice(0,4), ydone=rvwGet('sig:rvw-year')||RVW.start.slice(0,4);
+  add(3,'새해 연간 점검', ydone>=yr?yr+'년 했음':yr+'년 아직 — 지난해 계좌·삼삼안 곡선과 그림자 차이 적기, 실제 계좌 vs 모형 차이, 자료 갱신·대조', ydone>=yr?0:1, '한 해 차이만 보고 안을 바꾸지 않는다');
+  // ④ 심리
+  const dev=+(rvwGet('sig:rvw-dev-'+yr)||0);
+  add(4,'올해 시그널대로 하지 않은 날', dev+'일', dev>=T.dev.r?2:dev>=T.dev.y?1:0, '🔴 3일 이상이면 신호가 아니라 구조(현금 비중·램프 속도)를 다시 본다');
+  const g=Math.max(...rows.map(r=>r.g));
+  return {rows,g,M,date:RAW[L].date}; }
+function rvwRun(){
+  const body=document.getElementById('review-body'); if(!body) return;
+  let R=LAST_R, note='';
+  try{
+    if(!R){ RAW=parseBase(); buildVixMap(); R=runAll(); note='내장 자료(~'+RAW[RAW.length-1].date+') 기준입니다. ‘오늘 신호 확인’을 먼저 누르면 최신 값으로 봅니다.'; }
+    const L=RAW.length-1, today=ymd(new Date()), E=rvwEval(R,L,today), age=daysBetween(RAW[L].date,today);
+    if(age>7) note+=(note?' ':'')+'자료가 '+age+'일 묵었습니다 — 오늘 신호 확인을 먼저 누르세요.';
+    const lamp=g=>g===3?'⛔':g===2?'🔴':g===1?'🟡':'🟢';
+    const verdict=E.g===3?'⛔ 버틸 한도 — 재정비':E.g===2?'🔴 재검토할 때입니다':E.g===1?'🟡 아직 재검토할 때는 아님 — 지켜볼 것·할 일 있음':'🟢 재검토할 때 아님';
+    const color=E.g>=2?'#f87171':E.g===1?'#fbbf24':'#4ade80';
+    const G=['','① 성적이 역사 밖으로','② 신호가 제 일을 하는가','③ 정기','④ 심리'];
+    let h='<div style="font-weight:700;font-size:15px;color:'+color+';margin:2px 0 8px">'+verdict+'</div>';
+    h+='<div style="font-size:11px;color:var(--muted);margin-bottom:6px">기준일 '+kDate(E.date)+' · 삼삼안 통 모형(QQQ 종가 · TQQQ = QQQ×3 − 비용 · 연방기금금리 · 편도 0.01%)'+(note?'<br>'+note:'')+'</div>';
+    for(let k=1;k<=4;k++){ h+='<div style="margin-top:8px;font-size:12px;font-weight:600">'+G[k]+'</div>';
+      E.rows.filter(r=>r.grp===k).forEach(r=>{ h+='<div style="display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-family:\'JetBrains Mono\',monospace;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.04)"><span>'+lamp(r.g)+' '+r.label+'</span><span style="text-align:right">'+r.val+'<br><span style="color:var(--muted);opacity:.7">'+r.basis+'</span></span></div>'; }); }
+    h+='<div style="margin-top:10px;font-size:12px;font-weight:600">⑤ 직접 확인 (자동으로 못 봄) — 해당되면 재검토</div><div style="font-size:11px;line-height:1.7;color:#cbd5e1">'
+      +'· 사건: TQQQ·BOXX 상품 구조나 세금 변경 · 레버리지 ETF 규제 · VIX 출처 끊김 · 이 파일 코드를 고침 · 나스닥100 지수 규칙 변경(비중 상한·특별 리밸런싱) · 미국 증시 거래 시간이나 종가 경매 방식 변경 · TQQQ 상품 위험(조기 청산·스왑 문제 공지) · IBKR 수수료 체계 변경<br>'
+      +'· 삶의 단계: 일을 그만둘 때 → 인출기 규칙(크래쉬 투입 없음, 현금 = 7년치 생활비 통)<br>'
+      +'· 거시 경보: 매달 4일 기록(「claude/거시 경보 기록.md」)에서 1970년대형 경보가 켜졌는가</div>';
+    h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">'
+      +'<button type="button" class="tgl" id="rvw-dev-plus">시그널대로 안 한 날 +1</button>'
+      +'<button type="button" class="tgl" id="rvw-dev-minus">−1</button>'
+      +'<button type="button" class="tgl" id="rvw-year-done">새해 연간 점검 마침</button>'
+      +'<button type="button" class="tgl" id="rvw-done">재검토 마침 (오늘)</button></div>'
+      +'<div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.5">경보는 매도 신호가 아닙니다. 🔴가 뜨면 새 자료로 같은 시험을 다시 돌리고 그 결과로 판단합니다. 그림자보다 못하다는 이유로 갈아타지 않습니다. 버튼 기록은 이 기기에만 저장됩니다.</div>';
+    body.innerHTML=h;
+    const yr=today.slice(0,4), on=(id,f)=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>{ f(); rvwRun(); }); };
+    on('rvw-dev-plus',()=>rvwSet('sig:rvw-dev-'+yr,String(+(rvwGet('sig:rvw-dev-'+yr)||0)+1)));
+    on('rvw-dev-minus',()=>rvwSet('sig:rvw-dev-'+yr,String(Math.max(0,+(rvwGet('sig:rvw-dev-'+yr)||0)-1))));
+    on('rvw-year-done',()=>rvwSet('sig:rvw-year',yr));
+    on('rvw-done',()=>{ rvwSet('sig:rvw-done',today); rvwSet('sig:rvw-year',yr); });
+  }catch(e){ console.error(e); body.textContent='🔴 재검토 점검 계산 실패: '+e.message; } }
+document.getElementById('btn-review').addEventListener('click',rvwRun);
+
 // ═══════════════════════════════════════════════════════════
 </script>
 </body>
