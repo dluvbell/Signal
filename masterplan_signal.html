@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MasterPlan — Signal Tower · 플랜 A 섞기판 3×3 (새 플랜 A ½ + 트라이팟 ⅔ ½)</title>
+<!-- 2026-11-10 검수 반영(신호 엔진·트라이팟·배분·시트 기록 열·LOG_URL은 그대로): ① API가 오류(한도 초과 등)를 냈을 때 이 창에서 앞서 받은 봉이 있으면 그것으로 판정하고, 없으면 내장으로 계산하되 상태줄을 🟠로 — 주문 상자에도 '기준일이 N일 전 · 오늘의 지시가 아님'을 띄움 ② 75:25 계좌 규칙 안내(평가액 칸 = 섞기판 통, BOXX 100이 된 날 크래쉬 투입 ①, 연말·새해 첫 거래일 현금 25% 맞춤) ③ 신호 값·토글이 파일 기본값과 다르면 판정 카드와 주문 상자에 빨간 경고 ④ 집행 문구를 '기준일 다음 거래일 오후 3시에 직접 매매(파는 것 먼저)'로 ⑤ 장중 미리보기: 그 종가로 청산되는 날에도 넘어선 손절선을 보여 줌 · 빨간 경고 상자(.warn.r) 색이 빠져 있던 것 채움. -->
 <!-- 2026-11-06 장중 미리보기 추가: 지금 가격으로 마감하면 내일 아침 신호가 무엇일지 계산만 하는 패널(보기 전용). 판정 카드·오늘 주문·시트 기록·저장값은 그대로. -->
 <!-- 2026-11-04 재검토 점검 추가: '🔎 재검토 점검' 버튼을 누르면 지금 삼삼안을 재검토할 때인지 알려 준다. ① 성적(삼삼안 통 모형 곡선의 고점 대비 낙폭·고점 회복 못 한 기간·3년 연복리) ② 신호(TQQQ·QQQ를 든 채 QQQ가 빠진 폭·한 해 휩쏘 손실·매매일·레짐체인지 감시기) ③ 정기(QQQ −20% 하락이 끝남·5년·새해 연간 점검) ④ 심리(시그널대로 안 한 날). 🔴 문턱 = 이 파일의 내장 QQQ로 같은 모형을 돌려 잰 1999~2026 역사 최악 바로 바깥. 레짐체인지 감시기 기준선도 지금 신호 값으로 다시 잼. 판정·주문·시트 기록은 그대로. -->
 <!-- 2026-11-01 플랜 A 섞기판(3×3)으로 바꿈 (2026-10-31 결정): 목표 배분 = ½ 새 플랜 A + ½ 트라이팟 ⅔. 새 플랜 A = STRONG QQQ 50·TQQQ 50 / MID이고 SMA65 ≥ EMA200 QQQ 50·BOXX 50 / 그 밖(OUT·선행 진입 MID) BOXX 100 — MID 35·코어 10% 손절 없앰. 트라이팟 ⅔ = 강 QQQ 50·TQQQ 50 / 중 QQQ 100 / 현금 BOXX 100, 송팀장 공개 규칙(250일선 띠 ×1.01·×0.95, VIX 10일 평균 28·18, 252일 고점 대비 −9%) 그대로, QQQ 종가로 판정. VIX는 내장(CBOE 1999-03~2026-08-27) + Massive 지수(I:VIX) → CBOE 파일 → 손 입력 순서로 채운다. 목표가 바뀌는 날 전체 리밸 · 연 1회 정기 리밸 · 다음 거래일 집행. 신호 엔진(runEngine) 계산은 그대로(반환값에 _sma·_ema 배열만 더함). 현행 1.7(A안 코어 포함)은 그림자로 계산·기록만. 시트 키·열 그대로 — asset 값이 섞기판 배분, params 메모에 plan=MIX33 · A · T · VIX10 · old17(현행 1.7) · shadowG(플랜 A-문). VIX 중계(구글 Apps Script, CBOE → FRED)를 맨 먼저 시도. -->
@@ -79,6 +80,7 @@
   .warn.o{background:rgba(255,152,56,.1);color:var(--orange);border:1px solid rgba(255,152,56,.3)}
   .warn.y{background:rgba(255,210,59,.1);color:var(--yellow);border:1px solid rgba(255,210,59,.3)}
   .warn.b{background:rgba(56,169,255,.1);color:var(--blue);border:1px solid rgba(56,169,255,.3)}
+  .warn.r{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.35)}
   .hint{font-size:10px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace}
   /* ── 오늘 주문 상자 ── */
   .aux-order{border:1px solid var(--border2);border-radius:10px;padding:14px 15px;margin-top:12px}
@@ -111,7 +113,7 @@
 <body>
 
 <h1><span class="dot" id="live-dot"></span> 3-State Regime Signal Tower</h1>
-<div class="sub">매일 장 마감 후 1회 · QQQ 종가 + VIX 기준 · 집행은 다음 거래일 · <span id="plan-desc"><b>플랜 A 섞기판 (3×3)</b> = ½ 새 플랜 A + ½ 트라이팟 ⅔</span> · 현행 1.7은 그림자 기록만</div>
+<div class="sub">매일 1회, 장 열기 전에 전날 종가로 판정 · QQQ 종가 + VIX 기준 · 집행은 그날 오후 3시에 직접 매매 · <span id="plan-desc"><b>플랜 A 섞기판 (3×3)</b> = ½ 새 플랜 A + ½ 트라이팟 ⅔</span> · 현행 1.7은 그림자 기록만</div>
 <div id="plan-notice" class="warn y" style="display:none;margin:0 0 14px">
   <b>플랜 A 섞기판(3×3)으로 바뀌었습니다 (2026-11-01)</b><br>
   매일 두 표가 각자 원하는 비중을 반씩 더한 것이 목표 배분입니다. 3×3 행동표에서 오늘 칸이 파란 테두리로 보입니다.<br>
@@ -252,11 +254,12 @@
   <div class="panel-title">오늘 주문 &mdash; 플랜 A 섞기판 (3×3)</div>
   <div id="aux-body"></div>
   <div class="grid g2" style="margin-top:14px">
-    <div><label>포트 전체 평가액 (선택)</label>
+    <div><label>섞기판 통 평가액 (선택) — 계좌 × 지금 램프 비중(최종 75%) · 크래쉬 투입 중에는 계좌 전체</label>
       <input type="number" id="trn-value" step="1" placeholder="넣으면 주문 금액까지"></div>
     <div></div>
   </div>
-  <div class="hint">목표 배분 = ½ 새 플랜 A + ½ 트라이팟 ⅔ (위 3×3 표). 목표가 어제와 다르면 그날 총액으로 포트 전체를 새 목표대로 맞춥니다 &middot; 칸만 바뀌고 배분이 같으면 매매 없음 &middot; 새해 첫 거래일에 정기 리밸 &middot; 집행은 다음 거래일.<br>
+  <div class="hint">목표 배분 = ½ 새 플랜 A + ½ 트라이팟 ⅔ (위 3×3 표). 목표가 어제와 다르면 그날 총액으로 섞기판 통 전체를 새 목표대로 맞춥니다 &middot; 칸만 바뀌고 배분이 같으면 매매 없음 &middot; 새해 첫 거래일에 정기 리밸 &middot; 집행은 기준일 다음 거래일 오후 3시에 직접 매매(파는 것 먼저).<br>
+    계좌 = 섞기판 75 + 현금 25(램프 중에는 그날 비중). 이 칸의 %p와 금액은 섞기판 통 기준입니다. 크래쉬 투입 ①: 목표가 BOXX 100이 된 날의 다음 거래일에 현금 전부를 섞기판 몫으로 → 계좌가 투입 전 고점을 회복하면 그다음 거래일에 현금 25% 복원 → 투입~복원 동안은 새해 정기 리밸 때도 현금을 넣은 채로.<br>
     현행 1.7(STRONG QQQ 65 · TQQQ 35 / MID A안 코어 QQQ 35 · 손절 10% / OUT BOXX 100)은 그림자 기록만 합니다.</div>
 </div>
 
@@ -535,6 +538,15 @@ function runEngine(){
 }
 
 function val(id){return document.getElementById(id).value;}
+// [2026-11-10] 신호 값 오조작 감시 — 칸·토글이 이 파일의 기본값(HTML의 value · 3-STATE · E·R 켬)과 다르면 무엇이 다른지 돌려준다. 계산에는 관여하지 않는다.
+const PARAM_IDS=[['p-ma','추세 SMA'],['p-ema','기준선 EMA'],['p-adx-p','ADX 기간'],['p-adx-t','ADX 임계'],['p-atr-p','ATR 기간'],['p-atr-m','ATR 손절 승수'],['p-m','m 마진'],['p-k','R의 k'],['p-vol','변동성 임계'],['p-bw','밴드폭'],['p-volwin','변동성 창']];
+function paramDiff(){ const out=[];
+  try{
+    if(S.state!==3) out.push('3-STATE → 2-STATE'); if(!S.useE) out.push('E 꺼짐'); if(!S.useR) out.push('R 꺼짐');
+    PARAM_IDS.forEach(p=>{ const el=document.getElementById(p[0]); if(!el) return; const v=String(el.value).trim();
+      if(v===''||+v!==+el.defaultValue) out.push(p[1]+' '+el.defaultValue+' → '+(v===''?'(빈칸)':v)); });
+  }catch(e){}
+  return out; }
 
 // ── 결과 표시 ───────────────────────────────────────────────
 function render(R){
@@ -599,6 +611,7 @@ function render(R){
 
   // ── 경고 ──
   const w=[];
+  { const pd_=paramDiff(); if(pd_.length) w.push(['r','🔴 <b>신호 값이 파일 기본값과 다릅니다</b> — 이 판정은 확정 규칙으로 낸 것이 아닙니다: '+pd_.join(' · ')+'. 칸·토글을 기본값으로 되돌리고 다시 누르십시오(파일을 새로 열어도 됩니다).']); }   // [2026-11-10]
   if(!T.vixOwn) w.push(['o','🟠 기준일('+kDate(R.date)+') VIX가 없습니다 — '+(T.lastVixDate?kDate(T.lastVixDate)+' 값으로 채워 트라이팟을 계산했습니다':'VIX가 하나도 없어 트라이팟이 \'중/현금\'으로 기울었습니다')+'. 데이터 소스의 VIX 칸에 '+R.date+' VIX 종가를 넣고 \'VIX 저장 · 다시 판정\'을 누르십시오.']);
   else if(T.ownCnt<TRI.vw) w.push(['y','🟡 최근 '+TRI.vw+'거래일 중 VIX가 '+T.ownCnt+'일만 있습니다 — 빈 날은 앞날 값으로 채워 VIX10을 냈습니다.']);
   if(R.regime!==0){
@@ -917,7 +930,7 @@ function renderOrder(R){
   if(cellSw) why.push((A.prevA!==A.a?'플랜 A '+ANAME[A.prevA]+' → '+ANAME[A.a]:'플랜 A '+ANAME[A.a]+' 그대로')+' · '+(A.prevT!==A.t?'트라이팟 '+TNAME[A.prevT]+' → '+TNAME[A.t]:'트라이팟 '+TNAME[A.t]+' 그대로')+'.');
   if(cellSw && !same){
     title='목표 배분 변경 → 전체 리밸'; cls='act';
-    acts.push('포트 전체를 새 목표대로 맞춥니다 — <b>'+planLabel(T)+'</b> ('+xs(expoOf(T))+'배 · 어제 '+xs(expoOf(P))+'배).');
+    acts.push('섞기판 통 전체를 새 목표대로 맞춥니다 — <b>'+planLabel(T)+'</b> ('+xs(expoOf(T))+'배 · 어제 '+xs(expoOf(P))+'배).');
     const ks=['QQQ','TQQQ','BOXX'], dl=ks.map(k=>[k,T[k]-P[k]]).filter(x=>x[1]!==0);
     dl.filter(x=>x[1]<0).concat(dl.filter(x=>x[1]>0)).forEach(([k,d])=>acts.push(k+' '+P[k]+' → '+T[k]+' ('+(d>0?'+':'−')+Math.abs(d)+'%p '+(d>0?'매수':'매도')+money(Math.abs(d))+')'));
     if(has) acts.push('목표 금액: '+ks.filter(k=>T[k]>0).map(k=>k+' '+Math.round(val_*T[k]/100).toLocaleString('ko-KR')).join(' · '));
@@ -925,8 +938,17 @@ function renderOrder(R){
     title='칸만 바뀜 · 매매 없음';
     acts.push(lab(A.prevA,A.prevT)+' → '+lab(A.a,A.t)+': 목표 배분이 그대로 <b>'+planLabel(T)+'</b>입니다 — 주문 없음.');
   } else why.push('두 표 모두 어제와 같습니다 ('+lab(A.a,A.t)+').');
+  // [2026-11-10] 75:25 계좌 규칙 안내(인계 2026-11-06 1절) — 표시만. 판정·시트 기록과 무관.
+  if(T.BOXX===100){
+    if(P.BOXX!==100) acts.push('<b>크래쉬 투입 ①</b> — 섞기판 목표가 BOXX 100이 된 날입니다. 아직 투입 전이면 다음 거래일에 현금 25%(램프 중이면 대기 현금 전부)를 섞기판 몫으로 넘깁니다: 그날은 섞기판도 전부 BOXX라 따로 살 것은 없고, 그 뒤로 평가액 칸에는 <b>계좌 전체</b>를 넣습니다. 넘기기 전 <b>계좌 고점(IBKR 순자산)</b>을 적어 두십시오 — 계좌가 그 고점을 회복하면 그다음 거래일에 현금 25%를 다시 떼어 둡니다. 이미 투입 중이면 그대로 둡니다.');
+    else why.push('(크래쉬 투입 ①: 목표가 BOXX 100 — 현금은 이미 섞기판 몫으로 넘긴 상태여야 합니다. 복원은 계좌가 투입 전 고점을 회복한 다음 거래일.)');
+  }
   const m=+A.date.slice(5,7), dd=+A.date.slice(8,10);
-  if(m===12 && dd>=24){ acts.push('연말 — 새해 첫 거래일에 <b>정기 리밸</b>: 그날 목표대로 전 자산을 맞춥니다 ('+planLabel(T)+').'); if(title==='매매 없음') title='정기 리밸 예고'; }
+  if(m===12 && dd>=24){
+    const nx=new Date(+A.date.slice(0,4), m-1, dd+1); while(nx.getDay()===0||nx.getDay()===6) nx.setDate(nx.getDate()+1);
+    const lastBar=nx.getFullYear()!==+A.date.slice(0,4);   // 다음 평일이 새해 → 이 봉이 올해 마지막 거래일
+    acts.push((lastBar?'<b>다음 거래일이 새해 첫 거래일입니다</b> — ':'연말 — 새해 첫 거래일에 ')+'<b>정기 리밸</b>: 그날 목표대로 섞기판 통 전 자산을 맞춥니다 ('+planLabel(T)+'). 같은 날 현금 몫도 계좌의 25%로 맞춥니다(램프 중이면 그때 램프 비중대로 · 크래쉬 투입 중이면 현금을 넣은 채로).');
+    if(title==='매매 없음') title=lastBar?'정기 리밸 — 다음 거래일(새해 첫 거래일)':'정기 리밸 예고'; }
   // [2026-11-01] 처음 옮기는 날: 안내 상자의 '맞췄습니다'를 누르기 전까지는 현행 1.7 어제 목표 → 오늘 섞기판 목표로 주문을 보여 준다
   let acked=false; try{ acked=localStorage.getItem('sig:plan-ack')==='MIX33-20261101b'; }catch(e){}
   if(!acked){ const O=A.prevOld, ks=['QQQ','TQQQ','BOXX'], dl=ks.map(k=>[k,T[k]-O[k]]).filter(x=>x[1]!==0);
@@ -940,7 +962,11 @@ function renderOrder(R){
   else if(planLabel(A.old)!==planLabel(T)) why.push('(그림자 · 기록용 — 따르지 않음: 현행 1.7이라면 '+planLabel(A.old)+')');
 
   const row=(k,v)=>'<div class="metric"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';
-  body.innerHTML =
+  // [2026-11-10] 오늘의 지시가 아닐 수 있는 때를 주문 상자 안에서도 알린다 — 자료가 묵었거나(신선도 경보와 같은 기준: 4일 초과) 신호 값이 기본값과 다를 때. 평소에는 빈 문자열.
+  let banner=''; { const age=daysBetween(A.date, ymd(new Date())), pd_=paramDiff();
+    if(age!==null && age>4) banner+='<div class="warn r" style="margin:0 0 10px">🔴 <b>기준일이 '+age+'일 전('+kDate(A.date)+')입니다 — 아래는 오늘의 지시가 아닙니다.</b> API 수신을 확인하고 \'오늘 신호 확인\'을 다시 누르십시오.</div>';
+    if(pd_.length) banner+='<div class="warn r" style="margin:0 0 10px">🔴 <b>신호 값이 파일 기본값과 다릅니다</b> ('+pd_.join(' · ')+') — 아래 주문은 확정 규칙으로 낸 것이 아닙니다.</div>'; }
+  body.innerHTML = banner +
       '<div class="metrics">'
     + row('목표 배분 (오늘 종가 기준)', planLabel(T)+' · '+xs(expoOf(T))+'배')
     + row('어제 목표 배분', planLabel(P)+' · '+xs(expoOf(P))+'배')
@@ -948,7 +974,7 @@ function renderOrder(R){
     + '<div class="aux-order '+cls+'"><h4>'+title+'</h4><ul>'
     + (acts.length?acts:['오늘은 손대지 않습니다. 목표 배분 '+planLabel(T)+'.']).map(a=>'<li>'+a+'</li>').join('')
     + '</ul><div class="aux-why">'+(why.join(' ')||'&nbsp;')
-    + ' · 집행은 다음 거래일, 지정가로.</div></div>';
+    + ' · 집행은 기준일 다음 거래일 오후 3시에 직접 매매 — 파는 것 먼저, 그 돈으로 삽니다.</div></div>';
 }
 // ═══════════════════════════════════════════════════════════
 
@@ -956,7 +982,7 @@ function renderOrder(R){
 function nyNow(){ const f=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
   const p={}; f.formatToParts(new Date()).forEach(x=>{ p[x.type]=x.value; });
   return {date:p.year+'-'+p.month+'-'+p.day, min:(+p.hour%24)*60+(+p.minute)}; }
-let INTRADAY_DROPPED=null, API_RAW=0;
+let INTRADAY_DROPPED=null, API_RAW=0, GOOD_RAW=null;   // [2026-11-10] GOOD_RAW = 이 창에서 마지막으로 API를 받아 만든 봉 목록(API 오류 때 되쓴다)
 async function check(){
   const key=val('api-key').trim(), ticker=val('ticker');
   const s=document.getElementById('status'), btn=document.getElementById('btn-check');
@@ -971,18 +997,23 @@ async function check(){
   else { from.setDate(to.getDate()-4500); }
   const url=`https://api.massive.com/v2/aggs/ticker/${ticker}/range/1/day/${from.toISOString().split('T')[0]}/${to.toISOString().split('T')[0]}?adjusted=true&sort=asc&limit=5000&apiKey=${key}`;
   try{
-    let api=[];
+    let api=[], apiFail='';
     try{
       const j=await(await fetch(url)).json();
+      if(!(j.results&&j.results.length) && (j.error || (j.status && j.status!=='OK' && j.status!=='DELAYED'))) apiFail=String(j.error||j.message||j.status).slice(0,80);   // [2026-11-10] 한도 초과·권한 오류 등(빈 응답 OK는 오류가 아님)
       if(j.results&&j.results.length) api=j.results.map(r=>({date:new Date(r.t).toISOString().split('T')[0],open:r.o,high:r.h,low:r.l,close:r.c,vol:r.v}));
       // [2026-10-01] 장중 봉 제외 — 미국 장 마감(16:00 ET) 전에 누르면 API가 오늘 봉을 '지금까지 값'으로 줄 수 있다.
       //   그 봉으로 판정·기록하면 마감 값과 달라진다(받은 CSV에도 이렇게 들어간 장중 봉이 4개 있었다). 오늘(뉴욕) 봉은 16:10 ET 이후에만 쓴다.
       API_RAW=api.length;
       try{ const ny=nyNow(); if(api.length && api[api.length-1].date===ny.date && ny.min<16*60+10){ api.pop(); INTRADAY_DROPPED=ny.date; } }catch(_){}
-    }catch(apiErr){ console.warn('API 수신 실패, 내장 데이터로 폴백:', apiErr); }
-    RAW = isQQQ ? mergeData(base, api) : api;
+    }catch(apiErr){ console.warn('API 수신 실패, 내장 데이터로 폴백:', apiErr); if(!api.length) apiFail='연결 실패'; }
+    // [2026-11-10] API가 오류를 냈는데 이 창에서 앞서 받은 봉이 있으면 그것으로 판정한다(내장 끝 날짜로 되돌아가 엉뚱한 날의 주문을 보이지 않게).
+    let reused=false;
+    if(isQQQ && apiFail && !api.length && GOOD_RAW && GOOD_RAW.length && base.length && GOOD_RAW[GOOD_RAW.length-1].date>base[base.length-1].date){ RAW=GOOD_RAW.slice(); reused=true; }
+    else RAW = isQQQ ? mergeData(base, api) : api;
+    if(isQQQ && api.length) GOOD_RAW=RAW.slice();
     if(!RAW.length) throw new Error('데이터 없음 (내장·API 모두 비어있음)');
-    const src = (isQQQ ? ((api.length||API_RAW)? `내장 ${base.length} + API ${api.length}일` : `내장 ${base.length}일(API 미수신)`) : `API ${api.length}일`)
+    const src = (reused ? `앞서 받은 자료 ${RAW.length}일 다시 씀 · 이번 API 오류: ${apiFail}` : (isQQQ ? ((api.length||API_RAW)? `내장 ${base.length} + API ${api.length}일` : `내장 ${base.length}일(API 미수신${apiFail?' · 오류: '+apiFail:''})`) : `API ${api.length}일`))
       + (INTRADAY_DROPPED? ` · 장중 봉 ${INTRADAY_DROPPED} 제외(마감 16:00 ET 뒤 다시 누르면 반영)` : '');
     s.className='status ok';s.textContent=`🟢 수신 완료 (${src}) · VIX 확인 중...`;
     document.getElementById('live-dot').classList.add('live');
@@ -994,7 +1025,8 @@ async function check(){
     render(R);
     if(typeof renderMonitor==='function') renderMonitor(R);   // [v36] 레짐 감시기(존재 시)
     if(typeof renderOrder==='function') renderOrder(R);       // [2026-10-11] 오늘 주문 (트랑슈 없음)
-    s.textContent=`🟢 완료 · 기준일 ${kDate(R.date)} · ${RAW.length}일 재생 (${srcV})`;
+    if(apiFail && !api.length){ s.className='status pending'; s.textContent=`🟠 ${reused?'API를 받지 못해 앞서 받은 자료로 판정했습니다':'API를 받지 못해 내장 자료로만 계산했습니다 — 오늘의 판정이 아닐 수 있습니다'} · 기준일 ${kDate(R.date)} · ${RAW.length}일 재생 (${srcV})`; }   // [2026-11-10]
+    else s.textContent=`🟢 완료 · 기준일 ${kDate(R.date)} · ${RAW.length}일 재생 (${srcV})`;
     markRun(ymd(new Date()));
     paintRunLine(PREV_RUN);
     paintFresh(R.date, src);
@@ -1274,7 +1306,10 @@ async function pvRunUI() {
   const room = (p, line) => (line == null || !isFinite(line)) ? '' : (p >= line ? ` (선까지 여유 ${pv$(p - line)} · ${((line / p - 1) * 100).toFixed(1)}%)` : ` (선까지 ${pv$(line - p)} · +${((line / p - 1) * 100).toFixed(1)}% 올라야)`);
   const g1 = gap(A1), vOn = T1.trend === 1 ? TRI.vu : TRI.vd;
   const vSt = A1.vol == null ? '—' : A1.vol > A1.volUp ? `${A1.volUp.toFixed(1)}% 넘음 → MID 쪽` : A1.vol < A1.volDown ? `${A1.volDown.toFixed(1)}% 밑 → STRONG 쪽` : '사이 → 어제 상태 유지';
-  const stopSt = A1.atrStop == null ? '포지션 없음(OUT)' : P < A1.atrStop ? '손절선 밑 → OUT' : '손절선 위' + room(P, A1.atrStop);
+  // [2026-11-10] 어제는 보유였고 이 종가로 청산되는 날: 엔진은 청산 뒤 손절선을 비우므로, 넘어선 선(= 고점 − 승수 × 오늘 ATR)을 여기서 다시 계산해 보여 준다(표시만).
+  const exitToday = R0.highPeak != null && A1.highPeak == null;
+  const xPeak = exitToday ? Math.max(R0.highPeak, P) : null, xStop = (exitToday && A1.atr) ? xPeak - atrM * A1.atr : null;
+  const stopSt = exitToday ? (A1.exitCause === 'stop' ? `손절선 ${pv$(xStop)} 밑 → OUT` : '추세 이탈(SMA65 < EMA200) → OUT') : A1.atrStop == null ? '포지션 없음(OUT)' : '손절선 위' + room(P, A1.atrStop);
   const gapSt = g1 == null ? '—' : A1.regime === 0 ? (g1 >= mM && A1.adx >= A1.adxT ? '재진입 조건 충족' : `재진입은 +${(mM * 100).toFixed(0)}% 이상 · ADX ${A1.adxT} 이상`) : (g1 >= 0 ? 'SMA ≥ EMA → MID면 MID 50' : 'SMA < EMA → MID면 BOXX · OUT 쪽');
   const ddLine = T1.hi * (1 - TRI.dd), up = T1.sma250 * TRI.up, dn = T1.sma250 * TRI.dn;
   const trSt = !T1.sma250 ? '—' : P > up ? '상승 전환선 위 → 상승' : P < dn ? '하락 전환선 밑 → 하락' : `사이 → 어제 추세(${R0t.trend === 1 ? '상승' : '하락'}) 유지`;
@@ -1283,7 +1318,7 @@ async function pvRunUI() {
   const td = 'padding:4px 6px;border-bottom:1px solid var(--border);vertical-align:top';
   const row = (k, a, b, rule, st) => `<tr><td style="${td};color:var(--subtext)">${k}</td><td style="${td};text-align:right">${a}</td><td style="${td};text-align:right;color:var(--text)"><b>${b}</b></td><td style="${td};color:var(--muted)">${rule}</td><td style="${td}">${st}</td></tr>`;
   const sec = t => `<tr><td colspan="5" style="padding:8px 6px 3px;color:var(--blue);font-weight:700">${t}</td></tr>`;
-  let h = '<div class="warn y" style="margin-bottom:10px"><b>보기 전용 — 매매하지 않습니다.</b> 집행은 내일 아침 신호(전날 종가 판정)대로, 다음 날 점심에 합니다.</div>';
+  let h = '<div class="warn y" style="margin-bottom:10px"><b>보기 전용 — 이 값으로 매매하지 않습니다.</b> 오늘 오후 3시 집행은 위 판정 카드(어제 종가 판정)대로 합니다. 아래는 내일 아침 신호의 예고이고, 그 집행은 내일 오후 3시입니다.</div>';
   msgs.forEach(m => h += '<div class="warn y" style="margin-bottom:8px">' + m + '</div>');
   h += `<div class="why2">지금 신호 (${last.date} 종가 기준): <b>${pvCell(R0.a, R0t.state)} → ${pvMix(R0.mix)}</b><br>`
      + `오늘 ${pv$(P)}에 마감하면 내일 아침: <b>${pvCell(R1.a, T1.state)} → ${pvMix(R1.mix)}</b> ${ch ? '<span style="color:var(--yellow)">· 바뀜</span>' : '· 그대로'}</div>`;
@@ -1298,8 +1333,8 @@ async function pvRunUI() {
      + row('SMA65 − EMA200 간격', pvP(gap(R0)), pvP(g1), `MID 50은 0% 이상 · OUT에서 재진입은 +${(mM * 100).toFixed(0)}% 이상`, gapSt)
      + row('ADX (14)', f2(R0.adx), f2(A1.adx), `재진입 때 ${A1.adxT} 이상`, A1.adx >= A1.adxT ? `${A1.adxT} 이상` : `${A1.adxT} 밑`)
      + row('ATR (14)', f2(R0.atr), f2(A1.atr), '', '')
-     + row('사이클 고점', pv$(R0.highPeak), pv$(A1.highPeak), '', '')
-     + row('ATR 손절선', pv$(R0.atrStop), pv$(A1.atrStop), `= 사이클 고점 − ${atrM} × ATR · 종가가 밑이면 OUT`, stopSt)
+     + row('사이클 고점', pv$(R0.highPeak), exitToday ? pv$(xPeak) + ' (청산)' : pv$(A1.highPeak), '', '')
+     + row('ATR 손절선', pv$(R0.atrStop), exitToday ? pv$(xStop) + ' (청산)' : pv$(A1.atrStop), `= 사이클 고점 − ${atrM} × ATR · 종가가 밑이면 OUT`, stopSt)
      + sec('트라이팟 — ' + TNAME[R0t.state] + ' → ' + TNAME[T1.state] + ' · 추세 ' + (R0t.trend === 1 ? '상승' : '하락') + ' → ' + (T1.trend === 1 ? '상승' : '하락'))
      + row('250일선 (SMA250)', pv$(R0t.sma250), pv$(T1.sma250), '', '')
      + row('상승 전환선 (× 1.01)', pv$(R0t.sma250 * TRI.up), pv$(up), '종가가 위면 상승 추세', '')
