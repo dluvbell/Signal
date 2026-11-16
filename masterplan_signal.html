@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MasterPlan — Signal Tower · 플랜 A 섞기판 3×3 (새 플랜 A ½ + 트라이팟 ⅔ ½)</title>
+<!-- 2026-11-16 검증 뒤 고침 (신호 계산·칸 판정·빚 방어 계산·시트 키·열은 그대로 — 전 이력 6,917봉 판정이 고치기 전과 같음): ① 주문 칸이 '오늘 다시 계산한 어제 목표'뿐 아니라 '이 기기에서 마지막으로 본 목표'(sig:shown)와도 견준다 — 자료가 늦게 들어오거나 하루 걸러도 주문이 사라지지 않는다. ② 빚 방어를 넣기 전부터 방아쇠가 당겨져 있던 경우의 '한 번 옮기기' 주문과 한 번 뜨는 안내 상자(sig:upd-ack = U-20261116). ③ API를 못 받으면 앞서 받은 자료(sig:api-cache)로 판정하고 노란 경고 · 내장 자료만으로 판정한 날은 시트에 적지 않는다. ④ 신호 값·토글이 확정값(칸의 기본값)과 다르면 빨간 경고. ⑤ 75:25 안내 — 평가액 칸 = 섞기판 통(계좌의 75% 몫), 새해 정기 리밸은 속·겉 둘 다, 크래쉬 투입은 지침서대로(이 파일은 계산하지 않음). 집행 문구 = 다음 거래일 오후 3시쯤 직접(파는 것부터). ⑥ 경미: .warn.r 색 · VIX 손 입력 줄의 # 메모 무시 · 빚 손 입력에서 쓰지 않은 줄 알림 · 감시기 제목 252거래일. -->
 <!-- 2026-11-06 장중 미리보기 추가: 지금 가격으로 마감하면 내일 아침 신호가 무엇일지 계산만 하는 패널(보기 전용). 판정 카드·오늘 주문·시트 기록·저장값은 그대로. -->
 <!-- 2026-11-04 재검토 점검 추가: '🔎 재검토 점검' 버튼을 누르면 지금 삼삼안을 재검토할 때인지 알려 준다. ① 성적(삼삼안 통 모형 곡선의 고점 대비 낙폭·고점 회복 못 한 기간·3년 연복리) ② 신호(TQQQ·QQQ를 든 채 QQQ가 빠진 폭·한 해 휩쏘 손실·매매일·레짐체인지 감시기) ③ 정기(QQQ −20% 하락이 끝남·5년·새해 연간 점검) ④ 심리(시그널대로 안 한 날). 🔴 문턱 = 이 파일의 내장 QQQ로 같은 모형을 돌려 잰 1999~2026 역사 최악 바로 바깥. 레짐체인지 감시기 기준선도 지금 신호 값으로 다시 잼. 판정·주문·시트 기록은 그대로. -->
 <!-- 2026-11-15 빚 방어 추가: 신용잔고÷M2 초과분 40% 걸쇠 + 하이일드 +0.5 방아쇠 → 방아쇠가 당겨진 동안 섞기판 목표의 TQQQ 몫을 QQQ로. 칸 판정·크래쉬 투입·재검토 모형은 그대로. -->
@@ -80,6 +81,7 @@
   .warn.o{background:rgba(255,152,56,.1);color:var(--orange);border:1px solid rgba(255,152,56,.3)}
   .warn.y{background:rgba(255,210,59,.1);color:var(--yellow);border:1px solid rgba(255,210,59,.3)}
   .warn.b{background:rgba(56,169,255,.1);color:var(--blue);border:1px solid rgba(56,169,255,.3)}
+  .warn.r{background:rgba(255,59,92,.1);color:var(--red);border:1px solid rgba(255,59,92,.3)}
   .hint{font-size:10px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace}
   /* ── 오늘 주문 상자 ── */
   .aux-order{border:1px solid var(--border2);border-radius:10px;padding:14px 15px;margin-top:12px}
@@ -112,7 +114,7 @@
 <body>
 
 <h1><span class="dot" id="live-dot"></span> 3-State Regime Signal Tower</h1>
-<div class="sub">매일 장 마감 후 1회 · QQQ 종가 + VIX 기준 · 집행은 다음 거래일 · <span id="plan-desc"><b>플랜 A 섞기판 (3×3)</b> = ½ 새 플랜 A + ½ 트라이팟 ⅔</span> · 현행 1.7은 그림자 기록만</div>
+<div class="sub">매일 장 마감 후 1회 · QQQ 종가 + VIX 기준 · 집행은 다음 거래일 오후 3시쯤 · <span id="plan-desc"><b>플랜 A 섞기판 (3×3)</b> = ½ 새 플랜 A + ½ 트라이팟 ⅔</span> · 현행 1.7은 그림자 기록만</div>
 <div id="plan-notice" class="warn y" style="display:none;margin:0 0 14px">
   <b>플랜 A 섞기판(3×3)으로 바뀌었습니다 (2026-11-01)</b><br>
   매일 두 표가 각자 원하는 비중을 반씩 더한 것이 목표 배분입니다. 3×3 행동표에서 오늘 칸이 파란 테두리로 보입니다.<br>
@@ -122,6 +124,14 @@
   VIX: Massive 키에 지수 권한이 없고 CBOE 파일도 못 받으면, '데이터 소스'의 VIX 칸에 기준일 VIX 종가를 넣고 저장합니다(빈 날은 앞날 값으로 채워 계산하고 경고를 띄웁니다).<br>
   판정 카드의 <b>'현행 1.7 (그림자)'</b>는 예전 안이라면 어땠을지 비교하려고 기록만 하는 값입니다 — 따라 하지 않습니다.
   <div style="margin-top:8px"><button type="button" id="plan-notice-ok" style="font:inherit;font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer">맞췄습니다 · 다시 보지 않기</button></div>
+</div>
+<div id="upd-notice" class="warn y" style="display:none;margin:0 0 14px">
+  <b>2026-11-16에 고친 것 — 한 번 확인해 주세요</b><br>
+  ① <b>빚 방어</b>(2026-11-15 추가): 빚 경보가 켜진 동안 하이일드 방아쇠가 당겨지면 목표의 TQQQ 몫이 QQQ로 바뀝니다. 지금 상태는 판정 카드의 '빚 방어' 칸에 나옵니다. 방아쇠가 이미 당겨져 있어 어제 목표가 달라졌다면 '오늘 주문' 칸에 <b>한 번 옮기는 주문</b>(빚 방어 전 목표 → 오늘 목표)이 나옵니다 — 아래 버튼을 누를 때까지 계속 보입니다.<br>
+  ② <b>평가액 칸</b>은 계좌 전체가 아니라 <b>섞기판 통(계좌의 75% 몫)</b> 금액입니다 — 계좌 전체 금액을 넣어 두었다면 고쳐 주세요. 계좌 전체 = 섞기판 통 75 : 현금(BOXX) 25, 새해 첫 거래일에 속(통 안 비중)과 겉(75:25) 둘 다 맞춥니다.<br>
+  ③ 집행은 다음 거래일 <b>오후 3시쯤 직접</b>(파는 것부터).<br>
+  ④ 신호 값·토글이 확정값과 다르면 빨간 경고가 뜹니다 · API를 못 받으면 앞서 받은 자료로 판정하고 노란 경고를 띄웁니다 · '오늘 주문' 칸은 이 기기에서 마지막으로 본 목표와도 견줍니다(자료가 늦게 들어오거나 하루 걸러도 주문이 사라지지 않음).
+  <div style="margin-top:8px"><button type="button" id="upd-notice-ok" style="font:inherit;font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer">확인했습니다 · 다시 보지 않기</button></div>
 </div>
 
 <!-- ── API ── -->
@@ -193,6 +203,7 @@
   <div class="hint">변동성 &lt; 임계×(1−밴드폭) → STRONG · 변동성 &gt; 임계×(1+밴드폭) → MID · 그 사이는 현 상태 유지 (밴드는 절대폭이 아니라 <b>비율</b>: 24%·5% → 22.8 / 25.2 · 2026-10-11에 23%·21일에서 24%·23일로 바꿈)</div>
 </div>
 
+<div id="param-warn" class="warn r" style="display:none;margin:0 0 12px"></div>
 <button class="btn" id="btn-check">▶ 오늘 신호 확인</button>
 <div class="status" id="status"></div>
 <div id="freshbox" class="fresh hide"></div>
@@ -261,11 +272,12 @@
   <div class="panel-title">오늘 주문 &mdash; 플랜 A 섞기판 (3×3)</div>
   <div id="aux-body"></div>
   <div class="grid g2" style="margin-top:14px">
-    <div><label>포트 전체 평가액 (선택)</label>
+    <div><label>섞기판 통 평가액 (선택 · 계좌의 75% 몫 — 현금 25%는 빼고)</label>
       <input type="number" id="trn-value" step="1" placeholder="넣으면 주문 금액까지"></div>
     <div></div>
   </div>
-  <div class="hint">목표 배분 = ½ 새 플랜 A + ½ 트라이팟 ⅔ (위 3×3 표). 목표가 어제와 다르면 그날 총액으로 포트 전체를 새 목표대로 맞춥니다 &middot; 칸만 바뀌고 배분이 같으면 매매 없음 &middot; 새해 첫 거래일에 정기 리밸 &middot; 집행은 다음 거래일.<br>
+  <div class="hint">목표 배분 = ½ 새 플랜 A + ½ 트라이팟 ⅔ (위 3×3 표) — <b>섞기판 통 안</b>의 비중입니다. 목표가 어제와 다르면 그날 총액으로 섞기판 통 전체를 새 목표대로 맞춥니다 &middot; 칸만 바뀌고 배분이 같으면 매매 없음 &middot; 집행은 다음 거래일 오후 3시쯤 직접(파는 것부터).<br>
+    계좌 전체 = 섞기판 통 75 : 현금(BOXX) 25. 현금 25%는 크래쉬 때만 섞기판 통에 넣고 전고점을 되찾으면 다시 뺍니다 — 지침서의 크래쉬 투입 규칙대로(이 파일은 크래쉬 투입을 계산하지 않습니다) &middot; 새해 첫 거래일 정기 리밸은 속(통 안 비중)과 겉(75:25) 둘 다.<br>
     현행 1.7(STRONG QQQ 65 · TQQQ 35 / MID A안 코어 QQQ 35 · 손절 10% / OUT BOXX 100)은 그림자 기록만 합니다.</div>
 </div>
 
@@ -323,7 +335,7 @@ function parseVixText(txt){
     else if((m=line.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))){ d=m[3]+'-'+m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0'); rest=line.slice(m[0].length); }
     if(!d) return;
     let v=NaN; if(ci>0){ v=parseFloat(line.split(/[,\t;]/)[ci]); }
-    if(!isFinite(v)){ const nums=rest.match(/\d+(\.\d+)?/g); if(nums&&nums.length) v=parseFloat(nums[nums.length-1]); }
+    if(!isFinite(v)){ const nums=rest.split(/[#(]/)[0].match(/\d+(\.\d+)?/g); if(nums&&nums.length) v=parseFloat(nums[nums.length-1]); }
     if(isFinite(v) && v>=5 && v<=150) out[d]=Math.round(v*100)/100; });
   return out; }
 function ftimeout(url,ms){ const c=(typeof AbortController!=='undefined')?new AbortController():null; const t=c?setTimeout(()=>c.abort(),ms):null;
@@ -435,12 +447,13 @@ async function fetchDebt(){
   }catch(e){ return '빚 중계 ✗ (주소·배포 확인)'; } }
 // 손 입력: 한 줄에 하나 — "신용 2026-10 1448360" · "M2 2026-08 22950.3" · "HY 2026-11-13 3.25" (FRED CSV 줄 "2026-11-13,3.25"는 하이일드로 읽음)
 function parseDebtText(txt){
-  const o={mg:{},m2:{},hy:{}}; let k=0;
+  const o={mg:{},m2:{},hy:{}}, bad=[]; let k=0;   // [2026-11-16] bad = 읽지 못했거나 범위 밖이라 쓰지 않은 줄
   String(txt||'').split(/\r?\n/).forEach(raw=>{ const line=raw.trim().replace(/,(?=\d{3}\b)/g,''); if(!line) return;
-    let m=line.match(/^(신용|margin|M)\s+(\d{4})-(\d{1,2})\s+([\d.]+)/i); if(m){ o.mg[m[2]+'-'+m[3].padStart(2,'0')]=+m[4]; k++; return; }
-    m=line.match(/^M2\s+(\d{4})-(\d{1,2})(?:-\d{1,2})?\s+([\d.]+)/i); if(m){ o.m2[m[1]+'-'+m[2].padStart(2,'0')]=+m[3]; k++; return; }
-    m=line.match(/^(?:HY\s+)?(\d{4})-(\d{1,2})-(\d{1,2})[\s,;\t]+([\d.]+)\s*$/i); if(m){ const v=+m[4]; if(v>0.3&&v<30){ o.hy[m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0')]=v; k++; } } });
-  return {o,k}; }
+    let m=line.match(/^(신용|margin|M)\s+(\d{4})-(\d{1,2})\s+([\d.]+)/i); if(m){ const v=+m[4]; if(isFinite(v)&&v>1e4&&v<1e8){ o.mg[m[2]+'-'+m[3].padStart(2,'0')]=v; k++; } else bad.push(raw.trim()); return; }
+    m=line.match(/^M2\s+(\d{4})-(\d{1,2})(?:-\d{1,2})?\s+([\d.]+)/i); if(m){ const v=+m[3]; if(isFinite(v)&&v>1e3&&v<1e6){ o.m2[m[1]+'-'+m[2].padStart(2,'0')]=v; k++; } else bad.push(raw.trim()); return; }
+    m=line.match(/^(?:HY\s+)?(\d{4})-(\d{1,2})-(\d{1,2})[\s,;\t]+([\d.]+)\s*$/i); if(m){ const v=+m[4]; if(v>0.3&&v<30){ o.hy[m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0')]=v; k++; return; } }
+    bad.push(raw.trim()); });
+  return {o,k,bad}; }
 function paintDebt(note){
   const el=document.getElementById('debt-status'); buildDebt(); if(!el) return;
   const D=DEBT_D, M=debtMonths(), last=[...M.rows].reverse().find(r=>r.ex!=null), mgEnd=[...D.mg.keys()].sort().pop(), m2End=[...D.m2.keys()].sort().pop();
@@ -498,6 +511,16 @@ function runAll(){
   return R; }
 
 const S = { state:3, useE:true, useR:true };
+// [2026-11-16] 신호 값·토글이 확정값과 다른지 — 확정값은 각 칸의 HTML 기본값(defaultValue)과 3-STATE · E·R 켜짐.
+const PARAM_IDS=[['p-ma','추세 MA'],['p-ema','기준선 EMA'],['p-adx-p','ADX 기간'],['p-adx-t','ADX 임계'],['p-atr-p','ATR 기간'],['p-atr-m','ATR 손절 승수'],['p-m','m 마진'],['p-k','R의 k'],['p-vol','레짐 변동성 임계'],['p-bw','밴드폭'],['p-volwin','실현변동성 윈도우']];
+function paramDiffs(){ const out=[];
+  try{ PARAM_IDS.forEach(p=>{ const el=document.getElementById(p[0]); if(!el) return; const d=el.defaultValue; if(d==null||d==='') return;
+      if(String(el.value).trim()===''||+el.value!==+d) out.push(p[1]+' '+(String(el.value).trim()===''?'(빈칸)':el.value)+' (확정 '+d+')'); });
+    if(S.state!==3) out.push('2-STATE (확정 3-STATE)'); if(!S.useE) out.push('E 꺼짐 (확정 켜짐)'); if(!S.useR) out.push('R 꺼짐 (확정 켜짐)'); }catch(e){}
+  return out; }
+function paintParamWarn(){ try{ const el=document.getElementById('param-warn'); if(!el) return; const pd=paramDiffs();
+    if(!pd.length){ el.style.display='none'; el.innerHTML=''; return; }
+    el.style.display='block'; el.innerHTML='🔴 <b>신호 값·토글이 확정값과 다릅니다</b> — '+pd.join(' · ')+'<br>이대로 누르면 확정 신호가 아닌 판정이 나옵니다. 값을 되돌리고 누르십시오.'; }catch(e){} }
 
 function toggleState(){
   S.state = S.state===3?2:3;
@@ -508,6 +531,7 @@ function toggleState(){
   ['f-vol','f-bw','f-volwin','f-m'].forEach(id=>document.getElementById(id).classList.toggle('dim',S.state===2));
   ['p-vol','p-bw','p-volwin','p-m'].forEach(id=>document.getElementById(id).disabled=(S.state===2));
   document.getElementById('regime-panel').style.opacity = S.state===2?'.5':'1';
+  paintParamWarn();   // [2026-11-16]
 }
 function toggleOpt(o){
   if(o==='e'){ S.useE=!S.useE; document.getElementById('tgl-e').classList.toggle('on',S.useE); }
@@ -519,6 +543,7 @@ function toggleOpt(o){
   document.getElementById('p-k').disabled = !S.useR;
   document.getElementById('tgl-e').classList.toggle('on',S.useE);
   document.getElementById('tgl-r').classList.toggle('on',S.useR);
+  paintParamWarn();   // [2026-11-16]
 }
 
 // ── 지표 계산 ───────────────────────────────────────────────
@@ -709,6 +734,7 @@ function render(R){
 
   // ── 경고 ──
   const w=[];
+  { const pd=paramDiffs(); if(pd.length) w.push(['r','🔴 신호 값·토글이 확정값과 다릅니다 — '+pd.join(' · ')+'. 이 판정은 확정 신호가 아닙니다 — 값을 되돌리고 다시 누르십시오.']); }   // [2026-11-16]
   if(!T.vixOwn) w.push(['o','🟠 기준일('+kDate(R.date)+') VIX가 없습니다 — '+(T.lastVixDate?kDate(T.lastVixDate)+' 값으로 채워 트라이팟을 계산했습니다':'VIX가 하나도 없어 트라이팟이 \'중/현금\'으로 기울었습니다')+'. 데이터 소스의 VIX 칸에 '+R.date+' VIX 종가를 넣고 \'VIX 저장 · 다시 판정\'을 누르십시오.']);
   else if(T.ownCnt<TRI.vw) w.push(['y','🟡 최근 '+TRI.vw+'거래일 중 VIX가 '+T.ownCnt+'일만 있습니다 — 빈 날은 앞날 값으로 채워 VIX10을 냈습니다.']);
   if(R.regime!==0){
@@ -777,7 +803,7 @@ function renderMonitor(R){
   el.innerHTML=`<details style="border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden">
     <summary style="cursor:pointer;padding:11px 14px;font-weight:600;font-size:13px">
       ${lamp} 레짐체인지 감시기 — <span style="color:${vColor}">${verdict}</span>
-      <span style="float:right;color:var(--muted);font-size:10px;font-weight:400">최근 250일 · 월1회 ▾</span></summary>
+      <span style="float:right;color:var(--muted);font-size:10px;font-weight:400">최근 252거래일 · 월1회 ▾</span></summary>
     <div style="padding:2px 14px 12px">
       ${row(g1,'① 연간 레짐스왑', swapAnn.toFixed(1)+'회/년', '🟡'+MON_BASE.swapAmber+' 🔴'+MON_BASE.swapRed)}
       ${row(g2,'② 실현변동성 중앙값', (rvMed!=null?rvMed.toFixed(1)+'%':'—'), '🟡'+MON_BASE.volAmber+'% 🔴'+MON_BASE.volRed+'%')}
@@ -960,12 +986,16 @@ function paintRunLine(prev){
 }
 
 // 데이터 신선도 경보 — 기준일이 오늘로부터 며칠 지났는지
-function paintFresh(barDate, src){
+function paintFresh(barDate, src, apiBad){   // [2026-11-16] apiBad: '' | 'cache'(앞서 받은 자료로 판정) | 'base'(내장 자료만)
   const box=document.getElementById('freshbox'); if(!box) return;
   const today=ymd(new Date());
   const age=daysBetween(barDate,today);
   if(age===null){ box.className='fresh hide'; box.innerHTML=''; return; }
-  if(age<=4){ box.className='fresh hide'; box.innerHTML=''; return; }   // 연휴 낀 주말까지는 정상
+  if(age<=4 && !apiBad){ box.className='fresh hide'; box.innerHTML=''; return; }   // 연휴 낀 주말까지는 정상
+  if(age<=4){ box.className='fresh warn';   // [2026-11-16] 날짜는 최근이지만 API를 못 받았다
+    box.innerHTML='🟡 <b>API를 받지 못해 '+(apiBad==='cache'?'앞서 받은 자료':'내장 자료')+'로 판정했습니다</b><br>'+
+      '기준일 <b>'+kDate(barDate)+'</b> · 오늘 <b>'+kDate(today)+'</b> · <b>'+age+'일</b> 경과<br>'+
+      '<span style="color:#999">출처 '+src+' — 가장 최근 봉이 빠졌을 수 있습니다. 잠시 뒤 다시 누르거나 API 키를 확인하십시오.</span>'; return; }
   const bad=age>7;
   box.className='fresh '+(bad?'bad':'warn');
   box.innerHTML=(bad?'🔴':'🟡')+' <b>오래된 데이터로 판정했습니다</b><br>'+
@@ -1005,6 +1035,18 @@ function jo(w,pair){ const t=String(w).replace(/<[^>]*>/g,'').replace(/\s*\([^()
   return f?pair[0]:pair[1]; }
 function planShort(t){ const p=[]; if(t.QQQ>0)p.push('Q'+t.QQQ); if(t.QLD>0)p.push('L'+t.QLD); if(t.TQQQ>0)p.push('T'+t.TQQQ); if(t.BOXX>0)p.push('B'+t.BOXX); return p.join('/'); }
 
+// [2026-11-16] 이 기기에서 보여 준 목표를 기준일과 함께 적어 둔다 ('sig:shown' = {cur:{d,t}, prev:{d,t}}).
+//   주문 칸은 '오늘 다시 계산한 어제 목표'와 '앞선 기준일에 마지막으로 본 목표'가 다르면 뒤의 것을 계좌로 보고 견준다
+//   (하이일드·VIX·월 자료가 늦게 들어와 어제가 다시 계산됐거나, 며칠 건너뛴 경우). 둘이 같으면 종전과 똑같이 움직인다.
+//   적는 때 = '오늘 신호 확인'으로 확정 신호 값·받은 자료로 판정했을 때만(check). 미리보기·재검토·밀린 날 채움은 적지 않는다.
+const SHOWN_KEY='sig:shown', UPD_KEY='sig:upd-ack', UPD_VER='U-20261116';
+function shownGet(){ const o=lsGetObj(SHOWN_KEY), ok=x=>!!(x&&typeof x.d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x.d)&&x.t&&[x.t.QQQ,x.t.TQQQ,x.t.BOXX].every(v=>typeof v==='number'&&isFinite(v)&&v>=0&&v<=100)&&Math.abs(x.t.QQQ+x.t.TQQQ+x.t.BOXX-100)<1e-6);
+  return {cur:ok(o.cur)?o.cur:null, prev:ok(o.prev)?o.prev:null}; }
+function shownMark(date,t){ const s=shownGet(), e={d:date,t:{QQQ:t.QQQ,QLD:0,TQQQ:t.TQQQ,BOXX:t.BOXX}};
+  if(s.cur && s.cur.d>date) return;                                   // 더 이른 기준일(오래된 자료)은 적지 않는다
+  lsSetObj(SHOWN_KEY, (s.cur && s.cur.d===date) ? {cur:e,prev:s.prev} : {cur:e,prev:s.cur}); }   // 같은 기준일을 다시 누르면 그날 것만 바꾼다
+function shownBefore(date){ const s=shownGet(); return (s.cur&&s.cur.d<date)?s.cur:(s.prev&&s.prev.d<date)?s.prev:null; }
+function updAcked(){ try{ return localStorage.getItem(UPD_KEY)===UPD_VER; }catch(e){ return false; } }
 // 오늘·어제 봉의 칸 → 목표 배분 (주문 상자용)
 function computeOrd(R){
   const mx = R && R._mixArr;
@@ -1012,7 +1054,8 @@ function computeOrd(R){
   const L = mx.length-1;
   return { cell:R._cellArr[L], prevCell:R._cellArr[L-1], a:R._aArr[L], prevA:R._aArr[L-1], t:R._tArr[L], prevT:R._tArr[L-1],
            target:mx[L], prevTarget:mx[L-1], old:R._oldArr[L], prevOld:R._oldArr[L-1], close:RAW[L].close, date:RAW[L].date,
-           dg:R._dgArr?R._dgArr[L]:0, prevDg:R._dgArr?R._dgArr[L-1]:0, raw:R._mixRawArr?R._mixRawArr[L]:mx[L] };
+           dg:R._dgArr?R._dgArr[L]:0, prevDg:R._dgArr?R._dgArr[L-1]:0, raw:R._mixRawArr?R._mixRawArr[L]:mx[L],
+           prevRaw:R._mixRawArr?R._mixRawArr[L-1]:mx[L-1], prevDate:RAW[L-1].date, dgSince:(R.debt&&R.debt.trigSince)||'' };   // [2026-11-16]
 }
 
 function renderOrder(R){
@@ -1023,15 +1066,33 @@ function renderOrder(R){
   panel.style.display='block';
   const val_=parseFloat((document.getElementById('trn-value')||{}).value), has=isFinite(val_)&&val_>0;
   const money=pct=>has?' ≈ '+Math.round(val_*pct/100).toLocaleString('ko-KR'):'';
-  const T=A.target, P=A.prevTarget, same=planLabel(T)===planLabel(P), cellSw=A.cell!==A.prevCell, dgSw=A.dg!==A.prevDg;
+  const T=A.target, P0=A.prevTarget, cellSw=A.cell!==A.prevCell, dgSw=A.dg!==A.prevDg;
+  // [2026-11-16] 견줄 기준: 보통은 오늘 다시 계산한 어제 목표(P0). 아래 둘 중 하나면 그것을 계좌로 보고 견준다(late).
+  //   ⓐ 고침 안내를 아직 확인하지 않았고 어제 목표가 빚 방어로 달라져 있음 → 빚 방어 전 어제 목표(이 파일을 고치기 전에 보던 값)
+  //   ⓑ 이 기기에서 앞선 기준일에 마지막으로 본 목표가 P0와 다름
+  const seed=(!updAcked() && A.prevRaw && planShort(A.prevRaw)!==planShort(P0)) ? {d:A.prevDate, t:A.prevRaw, seed:true} : null;
+  const H=seed||shownBefore(A.date), late=!!(H && planShort(H.t)!==planShort(P0));
+  const P=late?H.t:P0, same=planLabel(T)===planLabel(P);
   const lab=(a,t)=>'플랜 A '+ANAME[a]+' × 트라이팟 '+TNAME[t];
   const acts=[], why=[]; let cls='', title='매매 없음';
   if(cellSw) why.push((A.prevA!==A.a?'플랜 A '+ANAME[A.prevA]+' → '+ANAME[A.a]:'플랜 A '+ANAME[A.a]+' 그대로')+' · '+(A.prevT!==A.t?'트라이팟 '+TNAME[A.prevT]+' → '+TNAME[A.t]:'트라이팟 '+TNAME[A.t]+' 그대로')+'.');
   if(dgSw) why.push(A.dg?'빚 방어 켜짐 — 빚 경보 중 하이일드가 최저보다 0.5 넘게 벌어짐: TQQQ 몫을 QQQ로'+(planLabel(A.raw)===planLabel(T)?' (지금 목표엔 TQQQ 없음 · 매매 없음).':'.'):'빚 방어 꺼짐 — 빚 경보가 꺼짐(초과분 0% 아래): 원래 목표로.');
   else if(A.dg && planLabel(A.raw)!==planLabel(T)) why.push('빚 방어 적용 중 (원래 목표 '+planLabel(A.raw)+').');
-  if((cellSw||dgSw) && !same){
+  if(late){   // [2026-11-16]
+    const whose=H.seed?'빚 방어 전 목표':'마지막으로 본 목표('+kDate(H.d)+' 기준일)';
+    why.push(H.seed ? '이 파일에 빚 방어가 들어가기 전 어제 목표는 '+planLabel(P)+'였고, 빚 방어'+(A.dgSince?'('+A.dgSince+'부터 적용 중)':'')+'로 다시 계산한 어제 목표는 '+planLabel(P0)+'입니다.'
+                    : '이 기기에서 '+whose+'는 '+planLabel(P)+'인데 오늘 다시 계산한 어제 목표는 '+planLabel(P0)+'입니다 — 자료(하이일드·VIX·월 자료)가 늦게 들어왔거나 며칠 건너뛴 경우입니다. 마지막으로 본 목표를 계좌로 보고 견줍니다.');
+    if(!same){
+      title=H.seed?'빚 방어 적용 — 한 번 옮기기':'마지막으로 본 목표와 다름 → 전체 리밸'; cls='act';
+      acts.push('계좌가 '+whose+' <b>'+planLabel(P)+'</b>대로라면 다음 거래일에 <b>'+planLabel(T)+'</b>'+jo(planLabel(T),'으로로')+' 맞춥니다 ('+xs(expoOf(T))+'배 · 지금 '+xs(expoOf(P))+'배).');
+      const ks=['QQQ','TQQQ','BOXX'], dl=ks.map(k=>[k,T[k]-P[k]]).filter(x=>x[1]!==0);
+      dl.filter(x=>x[1]<0).concat(dl.filter(x=>x[1]>0)).forEach(([k,d])=>acts.push(k+' '+P[k]+' → '+T[k]+' ('+(d>0?'+':'−')+Math.abs(d)+'%p '+(d>0?'매수':'매도')+money(Math.abs(d))+')'));
+      if(has) acts.push('목표 금액: '+ks.filter(k=>T[k]>0).map(k=>k+' '+Math.round(val_*T[k]/100).toLocaleString('ko-KR')).join(' · '));
+      acts.push('계좌가 이미 오늘 목표대로면 주문은 없습니다. 계좌가 둘 다와 다르면 계좌와 목표의 차이만큼 맞춥니다.'+(H.seed?" 맞춘 뒤 맨 위 안내 상자의 '확인했습니다 · 다시 보지 않기'를 누르면 이 칸은 평소 비교로 돌아갑니다.":''));
+    } else acts.push(whose+'와 오늘 목표가 같습니다 — <b>'+planLabel(T)+'</b> · 주문 없음.');
+  } else if((cellSw||dgSw) && !same){
     title='목표 배분 변경 → 전체 리밸'; cls='act';
-    acts.push('포트 전체를 새 목표대로 맞춥니다 — <b>'+planLabel(T)+'</b> ('+xs(expoOf(T))+'배 · 어제 '+xs(expoOf(P))+'배).');
+    acts.push('섞기판 통 전체를 새 목표대로 맞춥니다 — <b>'+planLabel(T)+'</b> ('+xs(expoOf(T))+'배 · 어제 '+xs(expoOf(P))+'배).');
     const ks=['QQQ','TQQQ','BOXX'], dl=ks.map(k=>[k,T[k]-P[k]]).filter(x=>x[1]!==0);
     dl.filter(x=>x[1]<0).concat(dl.filter(x=>x[1]>0)).forEach(([k,d])=>acts.push(k+' '+P[k]+' → '+T[k]+' ('+(d>0?'+':'−')+Math.abs(d)+'%p '+(d>0?'매수':'매도')+money(Math.abs(d))+')'));
     if(has) acts.push('목표 금액: '+ks.filter(k=>T[k]>0).map(k=>k+' '+Math.round(val_*T[k]/100).toLocaleString('ko-KR')).join(' · '));
@@ -1040,7 +1101,7 @@ function renderOrder(R){
     acts.push((cellSw?lab(A.prevA,A.prevT)+' → '+lab(A.a,A.t):'빚 방어 '+(A.dg?'켜짐':'꺼짐'))+': 목표 배분이 그대로 <b>'+planLabel(T)+'</b>입니다 — 주문 없음.');
   } else why.push('두 표 모두 어제와 같습니다 ('+lab(A.a,A.t)+').');
   const m=+A.date.slice(5,7), dd=+A.date.slice(8,10);
-  if(m===12 && dd>=24){ acts.push('연말 — 새해 첫 거래일에 <b>정기 리밸</b>: 그날 목표대로 전 자산을 맞춥니다 ('+planLabel(T)+').'); if(title==='매매 없음') title='정기 리밸 예고'; }
+  if(m===12 && dd>=24){ acts.push('연말 — 새해 첫 거래일에 <b>정기 리밸</b>: 속(섞기판 통을 그날 목표 '+planLabel(T)+'대로)과 겉(계좌를 섞기판 통 75 : 현금 25로) 둘 다 맞춥니다.'); if(title==='매매 없음') title='정기 리밸 예고'; }
   // [2026-11-01] 처음 옮기는 날: 안내 상자의 '맞췄습니다'를 누르기 전까지는 현행 1.7 어제 목표 → 오늘 섞기판 목표로 주문을 보여 준다
   let acked=false; try{ acked=localStorage.getItem('sig:plan-ack')==='MIX33-20261101b'; }catch(e){}
   if(!acked){ const O=A.prevOld, ks=['QQQ','TQQQ','BOXX'], dl=ks.map(k=>[k,T[k]-O[k]]).filter(x=>x[1]!==0);
@@ -1057,12 +1118,13 @@ function renderOrder(R){
   body.innerHTML =
       '<div class="metrics">'
     + row('목표 배분 (오늘 종가 기준)', planLabel(T)+' · '+xs(expoOf(T))+'배')
-    + row('어제 목표 배분', planLabel(P)+' · '+xs(expoOf(P))+'배')
+    + row('어제 목표 배분', planLabel(P0)+' · '+xs(expoOf(P0))+'배')
+    + (late ? row(H.seed?'빚 방어 전 어제 목표':'마지막으로 본 목표 ('+H.d+')', planLabel(P)+' · '+xs(expoOf(P))+'배') : '')   // [2026-11-16]
     + '</div>'
     + '<div class="aux-order '+cls+'"><h4>'+title+'</h4><ul>'
     + (acts.length?acts:['오늘은 손대지 않습니다. 목표 배분 '+planLabel(T)+'.']).map(a=>'<li>'+a+'</li>').join('')
     + '</ul><div class="aux-why">'+(why.join(' ')||'&nbsp;')
-    + ' · 집행은 다음 거래일, 지정가로.</div></div>';
+    + ' · 집행은 다음 거래일 오후 3시쯤 직접(파는 것부터), 지정가로.</div></div>';
 }
 // ═══════════════════════════════════════════════════════════
 
@@ -1070,6 +1132,22 @@ function renderOrder(R){
 function nyNow(){ const f=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
   const p={}; f.formatToParts(new Date()).forEach(x=>{ p[x.type]=x.value; });
   return {date:p.year+'-'+p.month+'-'+p.day, min:(+p.hour%24)*60+(+p.minute)}; }
+// [2026-11-16] API 실패 때는 앞서 받은 자료를 유지 — 받은 API 봉(내장 뒤)을 'sig:api-cache'에 적어 두고, 못 받은 날은 그 자료로 판정한다(노란 경고).
+//   적는 값은 판정에 쓴 봉 그대로(장중 봉을 뺀 뒤). 읽을 때 하나라도 이상하면 통째로 버린다.
+const API_CACHE_KEY='sig:api-cache';
+function apiCacheSave(lastBase, api){
+  try{ const bars=api.filter(r=>r.date>lastBase).map(r=>[r.date,r.open,r.high,r.low,r.close]);
+    if(bars.length) localStorage.setItem(API_CACHE_KEY, JSON.stringify({saved:ymd(new Date()), bars})); }catch(e){} }
+function apiCacheLoad(lastBase){
+  const none={saved:'',bars:[]}, out={saved:'',bars:[]};
+  try{ const o=JSON.parse(localStorage.getItem(API_CACHE_KEY)||'null'); if(!o||!Array.isArray(o.bars)) return none;
+    let prev='';
+    for(const b of o.bars){ if(!Array.isArray(b)||b.length<5) return none;
+      const d=String(b[0]), x=b.slice(1,5).map(Number);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(d) || !x.every(v=>isFinite(v)&&v>0) || x[1]<x[2] || d<=prev) return none;
+      prev=d; if(d>lastBase) out.bars.push({date:d,open:x[0],high:x[1],low:x[2],close:x[3],vol:0}); }
+    out.saved=String(o.saved||''); }catch(e){ return none; }
+  return out; }
 let INTRADAY_DROPPED=null, API_RAW=0;
 async function check(){
   const key=val('api-key').trim(), ticker=val('ticker');
@@ -1085,18 +1163,23 @@ async function check(){
   else { from.setDate(to.getDate()-4500); }
   const url=`https://api.massive.com/v2/aggs/ticker/${ticker}/range/1/day/${from.toISOString().split('T')[0]}/${to.toISOString().split('T')[0]}?adjusted=true&sort=asc&limit=5000&apiKey=${key}`;
   try{
-    let api=[];
+    let api=[], apiFail=false, apiMsg='', cacheSaved='';   // [2026-11-16]
     try{
       const j=await(await fetch(url)).json();
-      if(j.results&&j.results.length) api=j.results.map(r=>({date:new Date(r.t).toISOString().split('T')[0],open:r.o,high:r.h,low:r.l,close:r.c,vol:r.v}));
+      if(j&&j.results&&j.results.length) api=j.results.map(r=>({date:new Date(r.t).toISOString().split('T')[0],open:r.o,high:r.h,low:r.l,close:r.c,vol:r.v}));
+      else if(!j || j.status==='ERROR' || j.status==='NOT_AUTHORIZED' || j.error){ apiFail=true; apiMsg=String((j&&(j.error||j.message||j.status))||'빈 응답').slice(0,60); }   // [2026-11-16] 거절·오류 응답
       // [2026-10-01] 장중 봉 제외 — 미국 장 마감(16:00 ET) 전에 누르면 API가 오늘 봉을 '지금까지 값'으로 줄 수 있다.
       //   그 봉으로 판정·기록하면 마감 값과 달라진다(받은 CSV에도 이렇게 들어간 장중 봉이 4개 있었다). 오늘(뉴욕) 봉은 16:10 ET 이후에만 쓴다.
       API_RAW=api.length;
       try{ const ny=nyNow(); if(api.length && api[api.length-1].date===ny.date && ny.min<16*60+10){ api.pop(); INTRADAY_DROPPED=ny.date; } }catch(_){}
-    }catch(apiErr){ console.warn('API 수신 실패, 내장 데이터로 폴백:', apiErr); }
+    }catch(apiErr){ apiFail=true; apiMsg=apiMsg||'네트워크'; console.warn('API 수신 실패 — 앞서 받은 자료나 내장 데이터로 계속:', apiErr); }
+    if(isQQQ && base.length){ const lastBase=base[base.length-1].date;   // [2026-11-16] 받았으면 적어 두고, 못 받았으면 앞서 받은 자료를 쓴다
+      if(api.length && !apiFail) apiCacheSave(lastBase, api);
+      else if(!api.length && !INTRADAY_DROPPED){ const c=apiCacheLoad(lastBase); if(c.bars.length){ api=c.bars; cacheSaved=c.saved||'?'; } } }
+    const apiBad = cacheSaved ? 'cache' : apiFail ? 'base' : '';
     RAW = isQQQ ? mergeData(base, api) : api;
     if(!RAW.length) throw new Error('데이터 없음 (내장·API 모두 비어있음)');
-    const src = (isQQQ ? ((api.length||API_RAW)? `내장 ${base.length} + API ${api.length}일` : `내장 ${base.length}일(API 미수신)`) : `API ${api.length}일`)
+    const src = (isQQQ ? ( cacheSaved ? `내장 ${base.length} + 앞서 받은 자료 ${api.length}일(API 미수신${apiMsg?': '+apiMsg:''} · ${cacheSaved}에 받은 것)` : (api.length||API_RAW)? `내장 ${base.length} + API ${api.length}일` : `내장 ${base.length}일(API 미수신${apiMsg?': '+apiMsg:''})`) : `API ${api.length}일`)
       + (INTRADAY_DROPPED? ` · 장중 봉 ${INTRADAY_DROPPED} 제외(마감 16:00 ET 뒤 다시 누르면 반영)` : '');
     s.className='status ok';s.textContent=`🟢 수신 완료 (${src}) · VIX 확인 중...`;
     document.getElementById('live-dot').classList.add('live');
@@ -1110,11 +1193,16 @@ async function check(){
     render(R);
     if(typeof renderMonitor==='function') renderMonitor(R);   // [v36] 레짐 감시기(존재 시)
     if(typeof renderOrder==='function') renderOrder(R);       // [2026-10-11] 오늘 주문 (트랑슈 없음)
-    s.textContent=`🟢 완료 · 기준일 ${kDate(R.date)} · ${RAW.length}일 재생 (${srcV})`;
+    if(apiBad){ s.className='status pending'; s.textContent=`🟡 완료 (API 미수신 — ${apiBad==='cache'?'앞서 받은 자료':'내장 자료만'}) · 기준일 ${kDate(R.date)} · ${RAW.length}일 재생 (${srcV})`; }   // [2026-11-16]
+    else s.textContent=`🟢 완료 · 기준일 ${kDate(R.date)} · ${RAW.length}일 재생 (${srcV})`;
     markRun(ymd(new Date()));
     paintRunLine(PREV_RUN);
-    paintFresh(R.date, src);
-    if(ticker==='QQQ') logToSheet(R, srcV);   // [로그] 판정 후 시트 기록 (QQQ 기준일 때만)
+    paintFresh(R.date, src, apiBad);
+    // [2026-11-16] 마지막으로 본 목표 적기 — 확정 신호 값 · 받은 자료(또는 앞서 받은 자료) · 7일 안의 기준일일 때만
+    { const ageD=daysBetween(R.date, ymd(new Date())); if(isQQQ && apiBad!=='base' && !paramDiffs().length && ageD!==null && ageD<=7) shownMark(R.date, R.mix); }
+    if(ticker==='QQQ'){   // [로그] 판정 후 시트 기록 (QQQ 기준일 때만)
+      if(apiBad==='base'){ const lg=document.getElementById('log-status'); if(lg && LOG_URL && logSecret()){ lg.textContent='📒 API를 받지 못해 내장 자료만으로 판정했습니다 — 시트에 기록하지 않았습니다(다음에 받으면 밀린 날로 채웁니다)'; lg.style.color='#fbbf24'; } }   // [2026-11-16]
+      else logToSheet(R, srcV); }
   }catch(e){console.error(e);s.className='status err';s.textContent='🔴 실패: '+e.message;
     document.getElementById('live-dot').classList.remove('live');}
   finally{btn.disabled=false;}
@@ -1133,6 +1221,14 @@ document.getElementById('p-bounce').disabled=S.useR;
   let seen=''; try{ seen=localStorage.getItem(KEY)||''; }catch(e){}
   if(seen!==VER) box.style.display='block';
   if(ok) ok.addEventListener('click',()=>{ box.style.display='none'; try{ localStorage.setItem(KEY,VER); }catch(e){} if(LAST_R) renderOrder(LAST_R); });   // [2026-11-01] 주문 칸을 섞기판 비교로 다시 그림
+})();
+// ══ [2026-11-16] 고침 안내 — 이 기기에서 '확인했습니다'를 누를 때까지 뜬다 · 신호 값 경고는 칸을 고칠 때마다 다시 본다 ═══
+(function(){
+  const box=document.getElementById('upd-notice'), ok=document.getElementById('upd-notice-ok');
+  if(box){ if(!updAcked()) box.style.display='block';
+    if(ok) ok.addEventListener('click',()=>{ box.style.display='none'; try{ localStorage.setItem(UPD_KEY,UPD_VER); }catch(e){} if(LAST_R) renderOrder(LAST_R); }); }
+  PARAM_IDS.forEach(p=>{ const el=document.getElementById(p[0]); if(el){ el.addEventListener('input',paintParamWarn); el.addEventListener('change',paintParamWarn); } });
+  paintParamWarn();
 })();
 // ══ [저장] API 키 · 로그 시크릿 기기별 기억 (localStorage) ═══
 (function(){
@@ -1173,7 +1269,9 @@ paintLogLine();   // [밀린 날 채움] 이 기기의 마지막 기록일
     ta.value=L.join('\n'); };
   if(sv) sv.addEventListener('click',()=>{ const p=parseDebtText(ta?ta.value:''), m=lsGetObj('sig:debt-manual');
     m.mg=Object.assign(m.mg||{},p.o.mg); m.m2=Object.assign(m.m2||{},p.o.m2); m.hy=Object.assign(m.hy||{},p.o.hy); lsSetObj('sig:debt-manual',m);
-    paintDebt('손 입력 '+p.k+'줄 저장'); showMan(); if(LAST_R && val('api-key').trim()) check(); });
+    const note='손 입력 '+p.k+'줄 저장'+(p.bad&&p.bad.length?' · <span style="color:var(--orange)">쓰지 않은 줄 '+p.bad.length+'개 (형식·단위 확인 — 신용잔고는 백만 달러, M2는 십억 달러): '+p.bad.slice(0,3).map(x=>x.replace(/[<>&]/g,'').slice(0,40)).join(' / ')+'</span>':'');   // [2026-11-16]
+    paintDebt(note); showMan();
+    if(LAST_R && val('api-key').trim()){ const q=check(); if(p.bad&&p.bad.length&&q&&q.then) q.then(()=>paintDebt(note)); } });   // 다시 판정한 뒤에도 '쓰지 않은 줄' 알림은 남긴다
   showMan(); paintDebt('');
 })();
 // ══ [2026-11-04] 재검토 점검 — 버튼을 누르면 지금 삼삼안을 재검토할 때인지 알려 준다 ═══════════
@@ -1410,7 +1508,7 @@ async function pvRunUI() {
   const td = 'padding:4px 6px;border-bottom:1px solid var(--border);vertical-align:top';
   const row = (k, a, b, rule, st) => `<tr><td style="${td};color:var(--subtext)">${k}</td><td style="${td};text-align:right">${a}</td><td style="${td};text-align:right;color:var(--text)"><b>${b}</b></td><td style="${td};color:var(--muted)">${rule}</td><td style="${td}">${st}</td></tr>`;
   const sec = t => `<tr><td colspan="5" style="padding:8px 6px 3px;color:var(--blue);font-weight:700">${t}</td></tr>`;
-  let h = '<div class="warn y" style="margin-bottom:10px"><b>보기 전용 — 매매하지 않습니다.</b> 집행은 내일 아침 신호(전날 종가 판정)대로, 다음 날 점심에 합니다.</div>';
+  let h = '<div class="warn y" style="margin-bottom:10px"><b>보기 전용 — 매매하지 않습니다.</b> 집행은 내일 아침 신호(전날 종가 판정)대로, 내일 오후 3시쯤 직접 합니다(파는 것부터).</div>';
   msgs.forEach(m => h += '<div class="warn y" style="margin-bottom:8px">' + m + '</div>');
   h += `<div class="why2">지금 신호 (${last.date} 종가 기준): <b>${pvCell(R0.a, R0t.state)} → ${pvMix(R0.mix)}</b><br>`
      + `오늘 ${pv$(P)}에 마감하면 내일 아침: <b>${pvCell(R1.a, T1.state)} → ${pvMix(R1.mix)}</b> ${ch ? '<span style="color:var(--yellow)">· 바뀜</span>' : '· 그대로'}</div>`;
