@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MasterPlan — Signal Tower · 플랜 A 섞기판 3×3 (새 플랜 A ½ + 트라이팟 ⅔ ½)</title>
+<!-- 2026-11-17b 빚 자료 경고를 맨 위로: ① 빚 중계가 3일(서로 다른 날) 넘게 실패하면 노란 경고('sig:debt-fail') ② 발표 일정보다 늦은 월 자료 — 신용잔고(FINRA, 다음 달 셋째 주)는 28일부터 지난달분, M2(H.6, 다음 달 넷째 화요일)는 29일부터 지난달분이 있어야 함 — 1달 늦으면 노란, 2달 이상이면 주황 ③ 빚 경보가 켜졌고 방아쇠를 기다리는 동안 하이일드가 4일 넘게 묵으면 주황. 판정·주문·시트 기록은 그대로. -->
 <!-- 2026-11-17 빚 바닥 공격 추가 (2026-11-17 결정): 신용잔고÷M2 초과분이 어떤 달 −30% 이하 → 켜짐(걸쇠), 켜진 뒤 어떤 달 0% 이상 → 꺼짐. 자료는 빚 방어와 같이 '다음 달 마지막 날'부터. 켜진 동안 섞기판 목표의 QQQ 몫을 QLD로(TQQQ·BOXX 그대로). 하이일드 조건 없음. 빚 방어 방아쇠가 당겨진 날엔 적용하지 않음(둘은 같은 때 켜질 수 없음). 칸 판정·빚 방어·크래쉬 투입·재검토 모형·시트 키·열은 그대로 — 바닥 공격이 꺼진 날의 판정은 고치기 전과 같음. -->
 <!-- 2026-11-16 검증 뒤 고침 (신호 계산·칸 판정·빚 방어 계산·시트 키·열은 그대로 — 전 이력 6,917봉 판정이 고치기 전과 같음): ① 주문 칸이 '오늘 다시 계산한 어제 목표'뿐 아니라 '이 기기에서 마지막으로 본 목표'(sig:shown)와도 견준다 — 자료가 늦게 들어오거나 하루 걸러도 주문이 사라지지 않는다. ② 빚 방어를 넣기 전부터 방아쇠가 당겨져 있던 경우의 '한 번 옮기기' 주문과 한 번 뜨는 안내 상자(sig:upd-ack = U-20261116). ③ API를 못 받으면 앞서 받은 자료(sig:api-cache)로 판정하고 노란 경고 · 내장 자료만으로 판정한 날은 시트에 적지 않는다. ④ 신호 값·토글이 확정값(칸의 기본값)과 다르면 빨간 경고. ⑤ 75:25 안내 — 평가액 칸 = 섞기판 통(계좌의 75% 몫), 새해 정기 리밸은 속·겉 둘 다, 크래쉬 투입은 지침서대로(이 파일은 계산하지 않음). 집행 문구 = 다음 거래일 오후 3시쯤 직접(파는 것부터). ⑥ 경미: .warn.r 색 · VIX 손 입력 줄의 # 메모 무시 · 빚 손 입력에서 쓰지 않은 줄 알림 · 감시기 제목 252거래일. -->
 <!-- 2026-11-06 장중 미리보기 추가: 지금 가격으로 마감하면 내일 아침 신호가 무엇일지 계산만 하는 패널(보기 전용). 판정 카드·오늘 주문·시트 기록·저장값은 그대로. -->
@@ -448,14 +449,31 @@ async function fetchDebt(){
   const D=DEBT_D||buildDebt();
   try{ const from=D.hyDates.length?D.hyDates[Math.max(0,D.hyDates.length-30)]:'2025-01-01';
     const j=await (await ftimeout(relay+(relay.indexOf('?')<0?'?':'&')+'from='+from,30000)).json();
-    if(!j || !j.ok) return '빚 중계 ✗'+(j&&j.errs&&j.errs.length?' ('+j.errs.join(', ')+')':'');
+    if(!j || !j.ok){ const m='빚 중계 ✗'+(j&&j.errs&&j.errs.length?' ('+j.errs.join(', ')+')':''); debtFailMark(m); return m; }
     const c=lsGetObj('sig:debt-cache'); c.mg=c.mg||{}; c.m2=c.m2||{}; c.hy=c.hy||{}; let a=0,b=0,h=0;
     (j.margin||[]).forEach(r=>{ const ym=String(r[0]).slice(0,7), v=+r[1]; if(/^\d{4}-\d{2}$/.test(ym) && isFinite(v) && v>1e4 && v<1e8){ c.mg[ym]=v; a++; } });
     (j.m2||[]).forEach(r=>{ const ym=String(r[0]).slice(0,7), v=+r[1]; if(/^\d{4}-\d{2}$/.test(ym) && isFinite(v) && v>1e3 && v<1e6){ c.m2[ym]=v; b++; } });
     (j.hy||[]).forEach(r=>{ const d=String(r[0]).slice(0,10), v=+r[1]; if(/^\d{4}-\d{2}-\d{2}$/.test(d) && isFinite(v) && v>0.3 && v<30){ c.hy[d]=v; h++; } });
     lsSetObj('sig:debt-cache',c); buildDebt();
+    if(j.errs&&j.errs.length) debtFailMark('일부 ✗: '+j.errs.join(', ')); else debtFailClear();   // [2026-11-17b]
     return '빚 중계: 신용잔고 '+a+'달 · M2 '+b+'달 · 하이일드 '+h+'일'+(j.errs&&j.errs.length?' (일부 ✗: '+j.errs.join(', ')+')':'');
-  }catch(e){ return '빚 중계 ✗ (주소·배포 확인)'; } }
+  }catch(e){ debtFailMark('빚 중계 ✗ (주소·배포 확인)'); return '빚 중계 ✗ (주소·배포 확인)'; } }
+// [2026-11-17b] 빚 중계 실패 기록 — 서로 다른 날짜 수를 센다(같은 날 여러 번 눌러도 1). 성공하면 지움.
+function debtFailMark(msg){ const t=ymd(new Date()), o=lsGetObj('sig:debt-fail'); if(o.last!==t){ o.n=(o.n||0)+1; o.last=t; } if(!o.since) o.since=t; o.msg=msg; lsSetObj('sig:debt-fail',o); }
+function debtFailClear(){ try{ localStorage.removeItem('sig:debt-fail'); }catch(e){} }
+// [2026-11-17b] 발표 일정으로 본 '지금 있어야 할' 월 자료 — 신용잔고: 28일부터 지난달분 · M2: 29일부터 지난달분 (그 전엔 지지난달분)
+function debtDueYm(dayFrom){ const d=new Date(), back=d.getDate()>=dayFrom?1:2; const x=new Date(d.getFullYear(), d.getMonth()-back, 1); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0'); }
+function ymGap(a,b){ return (+b.slice(0,4)-(+a.slice(0,4)))*12+(+b.slice(5,7)-(+a.slice(5,7))); }   // b − a (달)
+function debtWarns(R){
+  const w=[], D=DEBT_D||buildDebt(), I=R.debt||{};
+  const f=lsGetObj('sig:debt-fail'); if((f.n||0)>=3) w.push(['y','🟡 빚 중계가 '+f.n+'일째 실패했습니다('+(f.since||'')+'부터 · '+(f.msg||'')+') — 판정은 앞서 받은 값으로 계속됩니다. 중계 주소·배포를 확인하거나, 아래 늦은 자료를 손 입력 칸에 넣으십시오.']);
+  const mgEnd=[...D.mg.keys()].sort().pop()||'', m2End=[...D.m2.keys()].sort().pop()||'';
+  const late=[]; let worst=0;
+  const chk=(name,end,due,when)=>{ const g=end?ymGap(end,due):99; if(g>=1){ worst=Math.max(worst,g); late.push(name+' ~'+(end||'없음')+' (있어야 할 달 '+due+' — '+when+')'); } };
+  chk('신용잔고',mgEnd,debtDueYm(28),'FINRA 다음 달 셋째 주 발표'); chk('M2',m2End,debtDueYm(29),'연준 H.6 다음 달 넷째 화요일 발표');
+  if(late.length) w.push([worst>=2?'o':'y',(worst>=2?'🟠':'🟡')+' 빚 월 자료가 발표 일정보다 늦습니다: '+late.join(' · ')+'. 빚 중계를 확인하거나 손 입력 칸에 넣으십시오(FINRA 표의 신용잔고 · FRED M2SL).']);
+  if(I.on && !I.trig && I.lastHY){ const g=Math.round((new Date(R.date)-new Date(I.lastHY))/864e5); if(g>4) w.push(['o','🟠 빚 경보가 켜져 방아쇠를 기다리는 중인데 하이일드가 '+I.lastHY+'까지뿐입니다('+g+'일) — FRED BAMLH0A0HYM2의 최근 줄을 손 입력 칸에 붙여 넣으십시오.']); }
+  return w; }
 // 손 입력: 한 줄에 하나 — "신용 2026-10 1448360" · "M2 2026-08 22950.3" · "HY 2026-11-13 3.25" (FRED CSV 줄 "2026-11-13,3.25"는 하이일드로 읽음)
 function parseDebtText(txt){
   const o={mg:{},m2:{},hy:{}}, bad=[]; let k=0;   // [2026-11-16] bad = 읽지 못했거나 범위 밖이라 쓰지 않은 줄
@@ -766,6 +784,7 @@ function render(R){
     if(T.v10!=null && Math.abs(T.v10-th)<2) w.push(['b','🔵 VIX10 '+T.v10.toFixed(2)+' — 트라이팟 기준 '+th+' ±2 이내']);
     if(T.trend && T.dd!=null && Math.abs(T.dd+TRI.dd)<0.02) w.push(['b','🔵 252일 고점 대비 '+pc(T.dd)+' — 트라이팟 기준 −9% ±2%p 이내']);
   }
+  try{ debtWarns(R).forEach(x=>w.push(x)); }catch(e){}   // [2026-11-17b] 빚 자료 경고
   document.getElementById('warns').innerHTML=w.map(x=>`<div class="warn ${x[0]}">${x[1]}</div>`).join('');
 }
 
